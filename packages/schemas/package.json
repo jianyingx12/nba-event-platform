@@ -14,9 +14,12 @@
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "zod": "4.6.5"
+  },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "typecheck": "tsc --project tsconfig.json"
   }
 }
