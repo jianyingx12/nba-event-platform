@@ -1,4 +1,9 @@
-import type { Game, GameEvent } from '@nba-event-platform/schemas';
+import type {
+  Game,
+  GameEvent,
+  GameState,
+  PlayerGameStats,
+} from '@nba-event-platform/schemas';
 
 export const game = {
   gameId: 'bos-nyk-2026-01',
@@ -24,3 +29,32 @@ export const gameEvent = {
   source: 'historical-replay',
   sourceEventId: 'provider-event-105',
 } satisfies GameEvent;
+
+export const gameState = {
+  gameId: game.gameId,
+  homeTeamId: game.homeTeamId,
+  awayTeamId: game.awayTeamId,
+  homeScore: 84,
+  awayScore: 79,
+  period: 3,
+  clock: '4:28',
+  status: 'live',
+  lastProcessedSequence: 281,
+} satisfies GameState;
+
+export const playerGameStats = {
+  gameId: game.gameId,
+  playerId: 'player-0',
+  points: 28,
+  rebounds: 8,
+  assists: 6,
+  steals: 2,
+  blocks: 1,
+  turnovers: 3,
+  fieldGoalsMade: 10,
+  fieldGoalsAttempted: 19,
+  threePointersMade: 4,
+  threePointersAttempted: 9,
+  freeThrowsMade: 4,
+  freeThrowsAttempted: 5,
+} satisfies PlayerGameStats;
