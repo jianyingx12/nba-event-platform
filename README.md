@@ -18,5 +18,6 @@ The `check` command runs formatting checks, linting, type checks, tests, and bui
 
 ```text
 packages/
+  database/  PostgreSQL connection and persistence code
   schemas/   Shared event schemas and TypeScript types
 ```
