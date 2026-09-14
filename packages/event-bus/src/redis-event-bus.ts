@@ -1,7 +1,12 @@
 import { gameEventSchema, type GameEvent } from '@nba-event-platform/schemas';
 import { createClient } from 'redis';
 
-import type { EventBusMessage, ReadEventsOptions } from './event-bus.js';
+import type {
+  ClaimPendingEventsOptions,
+  EventBus,
+  EventBusMessage,
+  ReadEventsOptions,
+} from './event-bus.js';
 
 interface RedisStreamMessage {
   id: string;
@@ -18,6 +23,19 @@ export interface RedisStreamsClient {
     id: string,
     message: Record<string, string>,
   ): Promise<string>;
+  xAck(key: string, group: string, id: string): Promise<number>;
+  xAutoClaim(
+    key: string,
+    group: string,
+    consumer: string,
+    minIdleTime: number,
+    start: string,
+    options: { COUNT: number },
+  ): Promise<{
+    nextId: string;
+    messages: Array<RedisStreamMessage | null>;
+    deletedMessages: string[];
+  }>;
   xGroupCreate(
     key: string,
     group: string,
@@ -38,7 +56,7 @@ export interface RedisEventBusOptions {
   streamKey?: string;
 }
 
-export class RedisEventBus {
+export class RedisEventBus implements EventBus {
   constructor(
     private readonly client: RedisStreamsClient,
     private readonly streamKey = 'game-events',
@@ -82,6 +100,45 @@ export class RedisEventBus {
         messageId: message.id,
         event: gameEventSchema.parse(JSON.parse(message.message.event ?? '')),
       })),
+    );
+  }
+
+  async acknowledge(
+    consumerGroup: string,
+    messageId: string,
+  ): Promise<boolean> {
+    const acknowledged = await this.client.xAck(
+      this.streamKey,
+      consumerGroup,
+      messageId,
+    );
+
+    return acknowledged > 0;
+  }
+
+  async claimPending(
+    options: ClaimPendingEventsOptions,
+  ): Promise<EventBusMessage[]> {
+    const result = await this.client.xAutoClaim(
+      this.streamKey,
+      options.consumerGroup,
+      options.consumerName,
+      options.minIdleTimeMs,
+      '0-0',
+      { COUNT: options.count ?? 10 },
+    );
+
+    return result.messages.flatMap((message) =>
+      message === null
+        ? []
+        : [
+            {
+              messageId: message.id,
+              event: gameEventSchema.parse(
+                JSON.parse(message.message.event ?? ''),
+              ),
+            },
+          ],
     );
   }
 

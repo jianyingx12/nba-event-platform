@@ -10,6 +10,12 @@ function createRedisClient(): RedisStreamsClient {
     close: vi.fn(async () => undefined),
     on: vi.fn(),
     xAdd: vi.fn(async () => '1710000000000-0'),
+    xAck: vi.fn(async () => 1),
+    xAutoClaim: vi.fn(async () => ({
+      nextId: '0-0',
+      messages: [],
+      deletedMessages: [],
+    })),
     xGroupCreate: vi.fn(async () => 'OK'),
     xReadGroup: vi.fn(async () => null),
   };
@@ -88,6 +94,58 @@ describe('RedisEventBus', () => {
         consumerName: 'worker-1',
       }),
     ).resolves.toEqual([]);
+  });
+
+  it('acknowledges a processed message', async () => {
+    const client = createRedisClient();
+    const eventBus = new RedisEventBus(client);
+
+    await expect(
+      eventBus.acknowledge('box-score', '1710000000000-0'),
+    ).resolves.toBe(true);
+    expect(client.xAck).toHaveBeenCalledWith(
+      'game-events',
+      'box-score',
+      '1710000000000-0',
+    );
+
+    vi.mocked(client.xAck).mockResolvedValueOnce(0);
+    await expect(
+      eventBus.acknowledge('box-score', 'missing-message'),
+    ).resolves.toBe(false);
+  });
+
+  it('claims and validates messages abandoned by another consumer', async () => {
+    const client = createRedisClient();
+    vi.mocked(client.xAutoClaim).mockResolvedValueOnce({
+      nextId: '0-0',
+      messages: [
+        null,
+        {
+          id: '1710000000000-0',
+          message: { event: JSON.stringify(gameEvent) },
+        },
+      ],
+      deletedMessages: [],
+    });
+    const eventBus = new RedisEventBus(client);
+
+    await expect(
+      eventBus.claimPending({
+        consumerGroup: 'box-score',
+        consumerName: 'worker-2',
+        minIdleTimeMs: 30_000,
+        count: 5,
+      }),
+    ).resolves.toEqual([{ messageId: '1710000000000-0', event: gameEvent }]);
+    expect(client.xAutoClaim).toHaveBeenCalledWith(
+      'game-events',
+      'box-score',
+      'worker-2',
+      30_000,
+      '0-0',
+      { COUNT: 5 },
+    );
   });
 
   it('closes an open client', async () => {
