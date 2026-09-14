@@ -7,3 +7,9 @@ export {
   type MigrationPool,
   type RunMigrationsOptions,
 } from './migrations.js';
+export { GameEventRepository } from './repositories/game-event-repository.js';
+export { GameRepository } from './repositories/game-repository.js';
+export type {
+  DatabaseQueryResult,
+  Queryable,
+} from './repositories/queryable.js';

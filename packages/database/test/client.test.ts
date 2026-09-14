@@ -1,7 +1,11 @@
 import { Pool } from 'pg';
 import { describe, expect, it } from 'vitest';
 
-import { createDatabasePool, type MigrationPool } from '../src/index.js';
+import {
+  createDatabasePool,
+  type MigrationPool,
+  type Queryable,
+} from '../src/index.js';
 
 describe('createDatabasePool', () => {
   it('creates a lazy PostgreSQL pool with the supplied options', async () => {
@@ -14,9 +18,11 @@ describe('createDatabasePool', () => {
       ssl: false,
     });
     const migrationPool: MigrationPool = pool;
+    const queryable: Queryable = pool;
 
     expect(pool).toBeInstanceOf(Pool);
     expect(migrationPool).toBe(pool);
+    expect(queryable).toBe(pool);
     expect(pool.options).toMatchObject({
       connectionString: 'postgresql://user:password@localhost:5432/nba',
       application_name: 'database-test',

@@ -29,6 +29,9 @@ importers:
 
   packages/database:
     dependencies:
+      '@nba-event-platform/schemas':
+        specifier: workspace:*
+        version: link:../schemas
       pg:
         specifier: 8.23.0
         version: 8.23.0

@@ -16,6 +16,7 @@
     "migrations"
   ],
   "dependencies": {
+    "@nba-event-platform/schemas": "workspace:*",
     "pg": "8.23.0"
   },
   "devDependencies": {
