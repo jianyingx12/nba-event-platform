@@ -1,9 +1,14 @@
 import type { EventBus } from '@nba-event-platform/event-bus';
-import { gameEventSchema } from '@nba-event-platform/schemas';
+import { gameEventSchema, type GameEvent } from '@nba-event-platform/schemas';
 import Fastify, { type FastifyInstance } from 'fastify';
+
+export interface EventStore {
+  insert(event: GameEvent): Promise<boolean>;
+}
 
 export interface AppOptions {
   eventBus: Pick<EventBus, 'publish'>;
+  eventStore: EventStore;
   readinessCheck?: () => boolean | Promise<boolean>;
 }
 
@@ -32,6 +37,15 @@ export function buildApp(options: AppOptions): FastifyInstance {
       return reply.status(400).send({
         accepted: false,
         reason: 'invalid_event',
+      });
+    }
+
+    const inserted = await options.eventStore.insert(result.data);
+
+    if (!inserted) {
+      return reply.status(200).send({
+        accepted: false,
+        reason: 'duplicate_event',
       });
     }
 
