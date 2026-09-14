@@ -1,15 +1,44 @@
-import type { GameEvent } from '../src/index.js';
+import type { Game, GameEvent, Player, Team } from '../src/index.js';
+
+export const homeTeam = {
+  teamId: 'BOS',
+  abbreviation: 'BOS',
+  city: 'Boston',
+  name: 'Celtics',
+} satisfies Team;
+
+export const awayTeam = {
+  teamId: 'NYK',
+  abbreviation: 'NYK',
+  city: 'New York',
+  name: 'Knicks',
+} satisfies Team;
+
+export const player = {
+  playerId: 'player-0',
+  displayName: 'Jayson Tatum',
+  teamId: homeTeam.teamId,
+} satisfies Player;
+
+export const game = {
+  gameId: 'bos-nyk-2026-01',
+  homeTeamId: homeTeam.teamId,
+  awayTeamId: awayTeam.teamId,
+  scheduledAt: '2026-01-15T00:00:00.000Z',
+  startedAt: '2026-01-15T00:05:00.000Z',
+  status: 'live',
+} satisfies Game;
 
 export const validGameEvent = {
   eventId: 'evt-105',
-  gameId: 'bos-nyk-2026-01',
+  gameId: game.gameId,
   sequence: 105,
   eventType: 'shot_made',
   occurredAt: '2026-01-15T00:08:42.000Z',
   period: 3,
   clock: '8:42',
-  teamId: 'BOS',
-  playerId: 'player-0',
+  teamId: homeTeam.teamId,
+  playerId: player.playerId,
   points: 3,
   description: 'BOS player makes 3-point shot',
   source: 'historical-replay',
