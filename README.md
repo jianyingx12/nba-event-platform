@@ -1,4 +1,22 @@
 # NBA Live Event Platform
 
-An event-driven NBA game processing platform focused on backend reliability, distributed systems, and cloud/platform engineering.
+This project processes NBA play-by-play events with independently scalable backend workers. The goal is to explore event-driven systems, failure recovery, and running the same stack locally with Docker and Kubernetes.
 
+## Getting started
+
+- Node.js 22.13 or newer
+- pnpm 11
+
+```bash
+pnpm install
+pnpm check
+```
+
+The `check` command runs formatting checks, linting, type checks, tests, and builds.
+
+## Project structure
+
+```text
+packages/
+  schemas/   Shared event schemas and TypeScript types
+```
