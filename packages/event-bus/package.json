@@ -15,10 +15,12 @@
     "dist"
   ],
   "dependencies": {
-    "@nba-event-platform/schemas": "workspace:*"
+    "@nba-event-platform/schemas": "workspace:*",
+    "redis": "6.2.1"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
+    "test": "vitest run",
     "typecheck": "tsc --project tsconfig.json"
   }
 }
