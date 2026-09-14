@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const identifierSchema = z.string().trim().min(1);
 
+export const nonNegativeIntegerSchema = z.number().int().nonnegative();
+
 export const basketballClockSchema = z
   .string()
   .regex(

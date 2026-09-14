@@ -1,4 +1,11 @@
-import type { Game, GameEvent, Player, Team } from '../src/index.js';
+import type {
+  Game,
+  GameEvent,
+  GameState,
+  Player,
+  PlayerGameStats,
+  Team,
+} from '../src/index.js';
 
 export const homeTeam = {
   teamId: 'BOS',
@@ -28,6 +35,35 @@ export const game = {
   startedAt: '2026-01-15T00:05:00.000Z',
   status: 'live',
 } satisfies Game;
+
+export const gameState = {
+  gameId: game.gameId,
+  homeTeamId: homeTeam.teamId,
+  awayTeamId: awayTeam.teamId,
+  homeScore: 84,
+  awayScore: 79,
+  period: 3,
+  clock: '4:28',
+  status: 'live',
+  lastProcessedSequence: 281,
+} satisfies GameState;
+
+export const playerGameStats = {
+  playerId: player.playerId,
+  gameId: game.gameId,
+  points: 28,
+  rebounds: 8,
+  assists: 6,
+  steals: 2,
+  blocks: 1,
+  turnovers: 3,
+  fieldGoalsMade: 10,
+  fieldGoalsAttempted: 19,
+  threePointersMade: 4,
+  threePointersAttempted: 9,
+  freeThrowsMade: 4,
+  freeThrowsAttempted: 5,
+} satisfies PlayerGameStats;
 
 export const validGameEvent = {
   eventId: 'evt-105',
