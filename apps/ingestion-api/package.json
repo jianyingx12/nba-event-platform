@@ -11,6 +11,8 @@
     "typecheck": "tsc --project tsconfig.json"
   },
   "dependencies": {
+    "@nba-event-platform/event-bus": "workspace:*",
+    "@nba-event-platform/schemas": "workspace:*",
     "fastify": "5.12.4"
   }
 }

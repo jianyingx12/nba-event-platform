@@ -1,10 +1,13 @@
+import type { EventBus } from '@nba-event-platform/event-bus';
+import { gameEventSchema } from '@nba-event-platform/schemas';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 export interface AppOptions {
+  eventBus: Pick<EventBus, 'publish'>;
   readinessCheck?: () => boolean | Promise<boolean>;
 }
 
-export function buildApp(options: AppOptions = {}): FastifyInstance {
+export function buildApp(options: AppOptions): FastifyInstance {
   const app = Fastify();
   const readinessCheck = options.readinessCheck ?? (() => true);
 
@@ -20,6 +23,24 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     }
 
     return reply.status(503).send({ status: 'unavailable' });
+  });
+
+  app.post('/v1/events', async (request, reply) => {
+    const result = gameEventSchema.safeParse(request.body);
+
+    if (!result.success) {
+      return reply.status(400).send({
+        accepted: false,
+        reason: 'invalid_event',
+      });
+    }
+
+    await options.eventBus.publish(result.data);
+
+    return reply.status(202).send({
+      accepted: true,
+      eventId: result.data.eventId,
+    });
   });
 
   return app;

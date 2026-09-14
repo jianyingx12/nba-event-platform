@@ -29,6 +29,12 @@ importers:
 
   apps/ingestion-api:
     dependencies:
+      '@nba-event-platform/event-bus':
+        specifier: workspace:*
+        version: link:../../packages/event-bus
+      '@nba-event-platform/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       fastify:
         specifier: 5.12.4
         version: 5.12.4
