@@ -9,11 +9,12 @@ export interface EventStore {
 export interface AppOptions {
   eventBus: Pick<EventBus, 'publish'>;
   eventStore: EventStore;
+  logger?: boolean;
   readinessCheck?: () => boolean | Promise<boolean>;
 }
 
 export function buildApp(options: AppOptions): FastifyInstance {
-  const app = Fastify();
+  const app = Fastify({ logger: options.logger ?? false });
   const readinessCheck = options.readinessCheck ?? (() => true);
 
   app.get('/health', async () => ({ status: 'ok' }));

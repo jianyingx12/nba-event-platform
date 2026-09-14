@@ -15,6 +15,7 @@ interface RedisStreamMessage {
 
 export interface RedisStreamsClient {
   readonly isOpen: boolean;
+  readonly isReady: boolean;
   connect(): Promise<unknown>;
   close(): Promise<unknown>;
   on(event: 'error', listener: (error: Error) => void): unknown;
@@ -140,6 +141,10 @@ export class RedisEventBus implements EventBus {
             },
           ],
     );
+  }
+
+  isReady(): boolean {
+    return this.client.isReady;
   }
 
   async close(): Promise<void> {

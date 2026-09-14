@@ -6,6 +6,7 @@ import { gameEvent } from './fixtures.js';
 function createRedisClient(): RedisStreamsClient {
   return {
     isOpen: true,
+    isReady: true,
     connect: vi.fn(async () => undefined),
     close: vi.fn(async () => undefined),
     on: vi.fn(),
@@ -155,5 +156,12 @@ describe('RedisEventBus', () => {
     await eventBus.close();
 
     expect(client.close).toHaveBeenCalledOnce();
+  });
+
+  it('reports whether the Redis connection is ready', () => {
+    const client = createRedisClient();
+    const eventBus = new RedisEventBus(client);
+
+    expect(eventBus.isReady()).toBe(true);
   });
 });
