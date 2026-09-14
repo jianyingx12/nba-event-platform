@@ -17,6 +17,8 @@ The `check` command runs formatting checks, linting, type checks, tests, and bui
 ## Project structure
 
 ```text
+apps/
+  ingestion-api/ Fastify API for accepting events
 packages/
   database/  PostgreSQL connection and persistence code
   event-bus/ Broker-neutral event delivery contracts
