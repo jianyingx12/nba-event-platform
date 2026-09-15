@@ -12,6 +12,7 @@ export function createInitialPlayerGameStats(
   return playerGameStatsSchema.parse({
     gameId,
     playerId,
+    lastProcessedSequence: 0,
     points: 0,
     rebounds: 0,
     assists: 0,
@@ -40,6 +41,12 @@ export function applyPlayerGameEvent(
 
   if (nextEvent.playerId !== current.playerId) {
     throw new Error(`event ${nextEvent.eventId} belongs to a different player`);
+  }
+
+  if (nextEvent.sequence <= current.lastProcessedSequence) {
+    throw new Error(
+      `event ${nextEvent.eventId} sequence ${nextEvent.sequence} is not after ${current.lastProcessedSequence}`,
+    );
   }
 
   const next = { ...current };
@@ -85,6 +92,8 @@ export function applyPlayerGameEvent(
     default:
       break;
   }
+
+  next.lastProcessedSequence = nextEvent.sequence;
 
   return playerGameStatsSchema.parse(next);
 }

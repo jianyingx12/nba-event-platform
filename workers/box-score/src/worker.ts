@@ -57,11 +57,21 @@ export class BoxScoreWorker {
       const current =
         (await this.dependencies.stats.find(message.event.gameId, playerId)) ??
         createInitialPlayerGameStats(message.event.gameId, playerId);
+
+      if (message.event.sequence === current.lastProcessedSequence) {
+        await this.acknowledgeMessage(message);
+        return;
+      }
+
       const next = applyPlayerGameEvent(current, message.event);
 
       await this.dependencies.stats.save(next);
     }
 
+    await this.acknowledgeMessage(message);
+  }
+
+  private async acknowledgeMessage(message: EventBusMessage): Promise<void> {
     const acknowledged = await this.dependencies.eventBus.acknowledge(
       this.consumerGroup,
       message.messageId,

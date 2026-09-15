@@ -6,6 +6,7 @@ export const playerGameStatsSchema = z
   .object({
     playerId: identifierSchema,
     gameId: identifierSchema,
+    lastProcessedSequence: nonNegativeIntegerSchema,
     points: nonNegativeIntegerSchema,
     rebounds: nonNegativeIntegerSchema,
     assists: nonNegativeIntegerSchema,

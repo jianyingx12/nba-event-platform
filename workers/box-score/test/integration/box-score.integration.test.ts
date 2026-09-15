@@ -103,6 +103,7 @@ describeWithServices('box score worker integration', () => {
       {
         gameId: game.gameId,
         playerId: 'player-0',
+        lastProcessedSequence: 10,
         points: 6,
         rebounds: 1,
         assists: 1,

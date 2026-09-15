@@ -28,17 +28,19 @@ function createMigrationDatabase(applied = false): {
 }
 
 describe('database migrations', () => {
-  it('loads the initial schema migration', async () => {
+  it('loads schema migrations in order', async () => {
     const migrations = await loadMigrations();
 
     expect(migrations.map((migration) => migration.name)).toEqual([
       '001_initial_schema.sql',
+      '002_player_stats_sequence.sql',
     ]);
     expect(migrations[0]?.sql).toContain('CREATE TABLE games');
     expect(migrations[0]?.sql).toContain('CREATE TABLE game_events');
     expect(migrations[0]?.sql).toContain('CREATE TABLE processed_events');
     expect(migrations[0]?.sql).toContain('CREATE TABLE game_state');
     expect(migrations[0]?.sql).toContain('CREATE TABLE player_game_stats');
+    expect(migrations[1]?.sql).toContain('last_processed_sequence');
   });
 
   it('applies an unapplied migration inside a transaction', async () => {

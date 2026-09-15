@@ -45,6 +45,7 @@ export const gameState = {
 export const playerGameStats = {
   gameId: game.gameId,
   playerId: 'player-0',
+  lastProcessedSequence: 281,
   points: 28,
   rebounds: 8,
   assists: 6,

@@ -133,4 +133,76 @@ describe('BoxScoreWorker', () => {
     );
     expect(dependencies.eventBus.acknowledge).not.toHaveBeenCalled();
   });
+
+  it('does not apply an event twice after acknowledgement failure and restart', async () => {
+    const event = createEvent({ eventType: 'shot_made', points: 3 });
+    let storedStats = createInitialPlayerGameStats(
+      event.gameId,
+      event.playerId!,
+    );
+    const firstDependencies = createDependencies();
+    vi.mocked(firstDependencies.stats.find).mockImplementation(
+      async () => storedStats,
+    );
+    vi.mocked(firstDependencies.stats.save).mockImplementation(
+      async (stats) => {
+        storedStats = stats;
+        return stats;
+      },
+    );
+    vi.mocked(firstDependencies.eventBus.read).mockResolvedValueOnce([
+      { messageId: 'message-1', event },
+    ]);
+    vi.mocked(firstDependencies.eventBus.acknowledge).mockResolvedValueOnce(
+      false,
+    );
+    const firstWorker = new BoxScoreWorker(firstDependencies, {
+      consumerName: 'worker-1',
+    });
+
+    await expect(firstWorker.processNextBatch()).rejects.toThrow(
+      'was not acknowledged',
+    );
+    expect(storedStats.points).toBe(3);
+
+    const restartedDependencies = createDependencies();
+    vi.mocked(restartedDependencies.stats.find).mockResolvedValueOnce(
+      storedStats,
+    );
+    vi.mocked(restartedDependencies.eventBus.read).mockResolvedValueOnce([
+      { messageId: 'message-1', event },
+    ]);
+    const restartedWorker = new BoxScoreWorker(restartedDependencies, {
+      consumerName: 'worker-2',
+    });
+
+    await expect(restartedWorker.processNextBatch()).resolves.toBe(1);
+    expect(restartedDependencies.stats.save).not.toHaveBeenCalled();
+    expect(restartedDependencies.eventBus.acknowledge).toHaveBeenCalledWith(
+      'box-score',
+      'message-1',
+    );
+    expect(storedStats.points).toBe(3);
+  });
+
+  it('does not persist or acknowledge an out-of-order player event', async () => {
+    const dependencies = createDependencies();
+    const current = {
+      ...createInitialPlayerGameStats('bos-nyk-2026-01', 'player-0'),
+      lastProcessedSequence: 2,
+    };
+    vi.mocked(dependencies.stats.find).mockResolvedValueOnce(current);
+    vi.mocked(dependencies.eventBus.read).mockResolvedValueOnce([
+      { messageId: 'message-1', event: createEvent() },
+    ]);
+    const worker = new BoxScoreWorker(dependencies, {
+      consumerName: 'worker-1',
+    });
+
+    await expect(worker.processNextBatch()).rejects.toThrow(
+      'sequence 1 is not after 2',
+    );
+    expect(dependencies.stats.save).not.toHaveBeenCalled();
+    expect(dependencies.eventBus.acknowledge).not.toHaveBeenCalled();
+  });
 });

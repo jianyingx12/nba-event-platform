@@ -135,6 +135,7 @@ describeWithServices('replay integration', () => {
       {
         gameId: fixture.game.gameId,
         playerId: 'player-0',
+        lastProcessedSequence: 4,
         points: 4,
         rebounds: 1,
         assists: 0,

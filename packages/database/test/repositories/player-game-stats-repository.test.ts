@@ -7,6 +7,7 @@ import { createTestDatabase } from './test-database.js';
 const statsRow = {
   game_id: playerGameStats.gameId,
   player_id: playerGameStats.playerId,
+  last_processed_sequence: playerGameStats.lastProcessedSequence,
   points: playerGameStats.points,
   rebounds: playerGameStats.rebounds,
   assists: playerGameStats.assists,

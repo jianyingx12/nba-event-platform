@@ -8,12 +8,14 @@ import { requireRow } from './row.js';
 
 const savePlayerGameStatsSql = `
   INSERT INTO player_game_stats (
-    game_id, player_id, points, rebounds, assists, steals, blocks, turnovers,
-    field_goals_made, field_goals_attempted, three_pointers_made,
-    three_pointers_attempted, free_throws_made, free_throws_attempted
+    game_id, player_id, last_processed_sequence, points, rebounds, assists,
+    steals, blocks, turnovers, field_goals_made, field_goals_attempted,
+    three_pointers_made, three_pointers_attempted, free_throws_made,
+    free_throws_attempted
   )
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
   ON CONFLICT (game_id, player_id) DO UPDATE SET
+    last_processed_sequence = EXCLUDED.last_processed_sequence,
     points = EXCLUDED.points,
     rebounds = EXCLUDED.rebounds,
     assists = EXCLUDED.assists,
@@ -44,6 +46,7 @@ function mapPlayerGameStatsRow(value: unknown): PlayerGameStats {
   return playerGameStatsSchema.parse({
     gameId: row.game_id,
     playerId: row.player_id,
+    lastProcessedSequence: row.last_processed_sequence,
     points: row.points,
     rebounds: row.rebounds,
     assists: row.assists,
@@ -67,6 +70,7 @@ export class PlayerGameStatsRepository {
     const result = await this.database.query(savePlayerGameStatsSql, [
       value.gameId,
       value.playerId,
+      value.lastProcessedSequence,
       value.points,
       value.rebounds,
       value.assists,
