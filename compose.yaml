@@ -71,6 +71,18 @@ services:
       redis:
         condition: service_healthy
 
+  replay-service:
+    build:
+      context: .
+      dockerfile: apps/replay-service/Dockerfile
+    environment:
+      FIXTURE_PATH: /app/data/fixtures/sample-game.json
+      INGESTION_API_URL: http://ingestion-api:3000
+      REPLAY_SPEED: max
+    depends_on:
+      ingestion-api:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     environment:
