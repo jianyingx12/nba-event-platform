@@ -79,6 +79,12 @@ importers:
 
   workers/game-state:
     dependencies:
+      '@nba-event-platform/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@nba-event-platform/event-bus':
+        specifier: workspace:*
+        version: link:../../packages/event-bus
       '@nba-event-platform/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
