@@ -80,6 +80,20 @@ describe('game state', () => {
     ).toThrow('belongs to a different game');
   });
 
+  it('rejects duplicate and out-of-order events', () => {
+    const current = applyGameEvent(
+      createInitialGameState(game),
+      createEvent({ eventId: 'evt-2', sequence: 2 }),
+    );
+
+    expect(() =>
+      applyGameEvent(current, createEvent({ eventId: 'evt-2', sequence: 2 })),
+    ).toThrow('sequence 2 is not after 2');
+    expect(() =>
+      applyGameEvent(current, createEvent({ eventId: 'evt-1', sequence: 1 })),
+    ).toThrow('sequence 1 is not after 2');
+  });
+
   it('rejects a scoring event without a known team and point value', () => {
     const initial = createInitialGameState(game);
 

@@ -31,6 +31,12 @@ export function applyGameEvent(state: GameState, event: GameEvent): GameState {
     throw new Error(`event ${nextEvent.eventId} belongs to a different game`);
   }
 
+  if (nextEvent.sequence <= current.lastProcessedSequence) {
+    throw new Error(
+      `event ${nextEvent.eventId} sequence ${nextEvent.sequence} is not after ${current.lastProcessedSequence}`,
+    );
+  }
+
   const next: GameState = {
     ...current,
     period: nextEvent.period,

@@ -7,6 +7,7 @@ import type { GameState } from '@nba-event-platform/schemas';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  applyGameEvent,
   createInitialGameState,
   GameStateWorker,
   type GameStateWorkerDependencies,
@@ -117,6 +118,27 @@ describe('GameStateWorker', () => {
     await expect(worker.processNextBatch()).rejects.toThrow(
       'database unavailable',
     );
+    expect(dependencies.eventBus.acknowledge).not.toHaveBeenCalled();
+  });
+
+  it('does not persist or acknowledge an out-of-order event', async () => {
+    const dependencies = createDependencies();
+    const current = applyGameEvent(
+      createInitialGameState(game),
+      createEvent({ eventId: 'evt-2', sequence: 2 }),
+    );
+    vi.mocked(dependencies.states.findByGameId).mockResolvedValueOnce(current);
+    vi.mocked(dependencies.eventBus.read).mockResolvedValueOnce([
+      { messageId: 'message-1', event: createEvent() },
+    ]);
+    const worker = new GameStateWorker(dependencies, {
+      consumerName: 'worker-1',
+    });
+
+    await expect(worker.processNextBatch()).rejects.toThrow(
+      'sequence 1 is not after 2',
+    );
+    expect(dependencies.states.save).not.toHaveBeenCalled();
     expect(dependencies.eventBus.acknowledge).not.toHaveBeenCalled();
   });
 });
