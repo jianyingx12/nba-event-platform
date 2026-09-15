@@ -121,6 +121,58 @@ describe('GameStateWorker', () => {
     expect(dependencies.eventBus.acknowledge).not.toHaveBeenCalled();
   });
 
+  it('does not apply an event twice after acknowledgement failure and restart', async () => {
+    const event = createEvent({
+      eventType: 'shot_made',
+      teamId: game.homeTeamId,
+      points: 3,
+    });
+    let storedState = createInitialGameState(game);
+    const firstDependencies = createDependencies();
+    vi.mocked(firstDependencies.states.findByGameId).mockImplementation(
+      async () => storedState,
+    );
+    vi.mocked(firstDependencies.states.save).mockImplementation(
+      async (state) => {
+        storedState = state;
+        return state;
+      },
+    );
+    vi.mocked(firstDependencies.eventBus.read).mockResolvedValueOnce([
+      { messageId: 'message-1', event },
+    ]);
+    vi.mocked(firstDependencies.eventBus.acknowledge).mockResolvedValueOnce(
+      false,
+    );
+    const firstWorker = new GameStateWorker(firstDependencies, {
+      consumerName: 'worker-1',
+    });
+
+    await expect(firstWorker.processNextBatch()).rejects.toThrow(
+      'was not acknowledged',
+    );
+    expect(storedState.homeScore).toBe(3);
+
+    const restartedDependencies = createDependencies();
+    vi.mocked(restartedDependencies.states.findByGameId).mockResolvedValueOnce(
+      storedState,
+    );
+    vi.mocked(restartedDependencies.eventBus.read).mockResolvedValueOnce([
+      { messageId: 'message-1', event },
+    ]);
+    const restartedWorker = new GameStateWorker(restartedDependencies, {
+      consumerName: 'worker-2',
+    });
+
+    await expect(restartedWorker.processNextBatch()).resolves.toBe(1);
+    expect(restartedDependencies.states.save).not.toHaveBeenCalled();
+    expect(restartedDependencies.eventBus.acknowledge).toHaveBeenCalledWith(
+      'game-state',
+      'message-1',
+    );
+    expect(storedState.homeScore).toBe(3);
+  });
+
   it('does not persist or acknowledge an out-of-order event', async () => {
     const dependencies = createDependencies();
     const current = applyGameEvent(

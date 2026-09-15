@@ -59,6 +59,14 @@ export class GameStateWorker {
       message.event.gameId,
     );
 
+    if (
+      state !== null &&
+      message.event.sequence === state.lastProcessedSequence
+    ) {
+      await this.acknowledgeMessage(message);
+      return;
+    }
+
     if (state === null) {
       const game = await this.dependencies.games.findById(message.event.gameId);
 
@@ -72,6 +80,10 @@ export class GameStateWorker {
     const nextState = applyGameEvent(state, message.event);
     await this.dependencies.states.save(nextState);
 
+    await this.acknowledgeMessage(message);
+  }
+
+  private async acknowledgeMessage(message: EventBusMessage): Promise<void> {
     const acknowledged = await this.dependencies.eventBus.acknowledge(
       this.consumerGroup,
       message.messageId,
