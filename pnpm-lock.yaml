@@ -77,6 +77,12 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
 
+  workers/game-state:
+    dependencies:
+      '@nba-event-platform/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
+
 packages:
 
   '@cacheable/memory@2.2.0':

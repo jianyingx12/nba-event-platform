@@ -23,4 +23,6 @@ packages/
   database/  PostgreSQL connection and persistence code
   event-bus/ Broker-neutral event delivery contracts
   schemas/   Shared event schemas and TypeScript types
+workers/
+  game-state/ Builds live game state from events
 ```
