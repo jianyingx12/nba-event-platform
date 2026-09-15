@@ -62,6 +62,27 @@ describe('replay runner', () => {
 });
 
 describe('HTTP ingestion client', () => {
+  it('registers games with the ingestion API', async () => {
+    const request = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 200 }),
+    );
+    const client = new HttpEventIngestionClient(
+      'http://localhost:3000',
+      request,
+    );
+
+    await client.registerGame(fixture.game);
+
+    expect(request).toHaveBeenCalledWith(
+      new URL('http://localhost:3000/v1/games'),
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(fixture.game),
+      },
+    );
+  });
+
   it('posts events to the ingestion API', async () => {
     const request = vi.fn<typeof fetch>(
       async () => new Response(null, { status: 202 }),
@@ -94,6 +115,20 @@ describe('HTTP ingestion client', () => {
 
     await expect(client.submit(events[0]!)).rejects.toThrow(
       'rejected event event-1 with status 503',
+    );
+  });
+
+  it('stops when the ingestion API rejects a game', async () => {
+    const request = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 503 }),
+    );
+    const client = new HttpEventIngestionClient(
+      'http://localhost:3000',
+      request,
+    );
+
+    await expect(client.registerGame(fixture.game)).rejects.toThrow(
+      'rejected game replay-game-1 with status 503',
     );
   });
 });

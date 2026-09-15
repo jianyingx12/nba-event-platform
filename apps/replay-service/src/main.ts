@@ -7,6 +7,7 @@ try {
   const config = loadConfig(process.argv.slice(2), process.env);
   const fixture = await readReplayFixture(config.fixturePath);
   const ingestion = new HttpEventIngestionClient(config.ingestionApiUrl);
+  await ingestion.registerGame(fixture.game);
   const eventCount = await replayFixture(fixture, ingestion, {
     speed: config.speed,
   });

@@ -55,7 +55,6 @@ describeWithServices('replay integration', () => {
     await database.query('DELETE FROM games WHERE id = $1', [
       fixture.game.gameId,
     ]);
-    await games.save(fixture.game);
 
     [publisher, gameStateBus, boxScoreBus] = await Promise.all(
       Array.from({ length: 3 }, async () => {
@@ -95,11 +94,11 @@ describeWithServices('replay integration', () => {
       throw new Error('integration services were not initialized');
     }
 
-    const eventCount = await replayFixture(
-      fixture,
-      new HttpEventIngestionClient(ingestionUrl),
-      { speed: 'max' },
-    );
+    const ingestion = new HttpEventIngestionClient(ingestionUrl);
+    await ingestion.registerGame(fixture.game);
+    const eventCount = await replayFixture(fixture, ingestion, {
+      speed: 'max',
+    });
     const gameStateWorker = new GameStateWorker(
       { eventBus: gameStateBus, games, states },
       {
