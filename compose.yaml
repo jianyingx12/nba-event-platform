@@ -43,6 +43,20 @@ services:
       redis:
         condition: service_healthy
 
+  box-score-worker:
+    build:
+      context: .
+      dockerfile: workers/box-score/Dockerfile
+    environment:
+      CONSUMER_NAME: box-score-worker-1
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nba
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     environment:
