@@ -113,6 +113,10 @@ importers:
       '@nba-event-platform/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
+    devDependencies:
+      '@types/node':
+        specifier: 22.20.2
+        version: 22.20.2
 
   workers/box-score:
     dependencies:

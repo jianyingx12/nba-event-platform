@@ -8,3 +8,9 @@ export {
   type AnalyticsWorkerDependencies,
   type AnalyticsWorkerOptions,
 } from './worker.js';
+export { loadConfig, type AnalyticsWorkerConfig } from './config.js';
+export {
+  runAnalyticsWorker,
+  runWorkerLoop,
+  type BatchProcessor,
+} from './runtime.js';
