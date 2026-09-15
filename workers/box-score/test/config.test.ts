@@ -13,6 +13,7 @@ describe('box score worker configuration', () => {
     ).toEqual({
       batchSize: 10,
       blockMs: 5_000,
+      claimIdleMs: 30_000,
       consumerName: 'worker-1',
       databaseUrl: 'postgresql://localhost/nba',
       redisUrl: 'redis://localhost:6379',
@@ -44,6 +45,9 @@ describe('box score worker configuration', () => {
     );
     expect(() => loadConfig({ ...environment, BLOCK_MS: 'later' })).toThrow(
       'BLOCK_MS must be a positive integer',
+    );
+    expect(() => loadConfig({ ...environment, CLAIM_IDLE_MS: '0' })).toThrow(
+      'CLAIM_IDLE_MS must be a positive integer',
     );
   });
 });

@@ -1,6 +1,7 @@
 export interface BoxScoreWorkerConfig {
   batchSize: number;
   blockMs: number;
+  claimIdleMs: number;
   consumerName: string;
   databaseUrl: string;
   redisUrl: string;
@@ -12,6 +13,11 @@ export function loadConfig(environment: Environment): BoxScoreWorkerConfig {
   return {
     batchSize: positiveInteger(environment.BATCH_SIZE, 'BATCH_SIZE', 10),
     blockMs: positiveInteger(environment.BLOCK_MS, 'BLOCK_MS', 5_000),
+    claimIdleMs: positiveInteger(
+      environment.CLAIM_IDLE_MS,
+      'CLAIM_IDLE_MS',
+      30_000,
+    ),
     consumerName: requiredValue(environment, 'CONSUMER_NAME'),
     databaseUrl: requiredValue(environment, 'DATABASE_URL'),
     redisUrl: requiredValue(environment, 'REDIS_URL'),

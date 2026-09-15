@@ -13,9 +13,13 @@ import { createEvent } from './fixtures.js';
 function createDependencies(): BoxScoreWorkerDependencies {
   const eventBus = {
     acknowledge: vi.fn(async () => true),
+    claimPending: vi.fn(async () => []),
     ensureConsumerGroup: vi.fn(async () => undefined),
     read: vi.fn(async () => []),
-  } satisfies Pick<EventBus, 'acknowledge' | 'ensureConsumerGroup' | 'read'>;
+  } satisfies Pick<
+    EventBus,
+    'acknowledge' | 'claimPending' | 'ensureConsumerGroup' | 'read'
+  >;
   const stats = {
     find: vi.fn(async () =>
       createInitialPlayerGameStats('bos-nyk-2026-01', 'player-0'),
@@ -38,12 +42,44 @@ describe('BoxScoreWorker', () => {
     expect(dependencies.eventBus.ensureConsumerGroup).toHaveBeenCalledWith(
       'box-score',
     );
+    expect(dependencies.eventBus.claimPending).toHaveBeenCalledWith({
+      consumerGroup: 'box-score',
+      consumerName: 'worker-1',
+      minIdleTimeMs: 30_000,
+      count: 10,
+    });
     expect(dependencies.eventBus.read).toHaveBeenCalledWith({
       consumerGroup: 'box-score',
       consumerName: 'worker-1',
       count: 10,
       blockMs: 100,
     });
+  });
+
+  it('processes an abandoned message before reading new messages', async () => {
+    const dependencies = createDependencies();
+    const event = createEvent();
+    vi.mocked(dependencies.eventBus.claimPending).mockResolvedValueOnce([
+      { messageId: 'pending-message', event },
+    ]);
+    const worker = new BoxScoreWorker(dependencies, {
+      consumerName: 'recovery-worker',
+      claimIdleMs: 1_000,
+    });
+
+    await expect(worker.processNextBatch()).resolves.toBe(1);
+    expect(dependencies.eventBus.claimPending).toHaveBeenCalledWith({
+      consumerGroup: 'box-score',
+      consumerName: 'recovery-worker',
+      minIdleTimeMs: 1_000,
+      count: 10,
+    });
+    expect(dependencies.eventBus.read).not.toHaveBeenCalled();
+    expect(dependencies.stats.save).toHaveBeenCalledOnce();
+    expect(dependencies.eventBus.acknowledge).toHaveBeenCalledWith(
+      'box-score',
+      'pending-message',
+    );
   });
 
   it('updates existing stats and acknowledges after saving', async () => {

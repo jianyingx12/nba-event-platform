@@ -50,6 +50,7 @@ export async function runBoxScoreWorker(
       {
         batchSize: config.batchSize,
         blockMs: config.blockMs,
+        claimIdleMs: config.claimIdleMs,
         consumerName: config.consumerName,
       },
     );
