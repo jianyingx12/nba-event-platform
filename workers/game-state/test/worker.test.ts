@@ -18,11 +18,16 @@ function createDependencies(): GameStateWorkerDependencies {
   const eventBus = {
     acknowledge: vi.fn(async () => true),
     claimPending: vi.fn(async () => []),
+    deadLetter: vi.fn(async () => 'dead-letter-message'),
     ensureConsumerGroup: vi.fn(async () => undefined),
     read: vi.fn(async () => []),
   } satisfies Pick<
     EventBus,
-    'acknowledge' | 'claimPending' | 'ensureConsumerGroup' | 'read'
+    | 'acknowledge'
+    | 'claimPending'
+    | 'deadLetter'
+    | 'ensureConsumerGroup'
+    | 'read'
   >;
   const games = {
     findById: vi.fn(async () => game),
@@ -139,7 +144,7 @@ describe('GameStateWorker', () => {
     );
   });
 
-  it('leaves a message pending when state persistence fails', async () => {
+  it('dead-letters a message when state persistence exhausts its attempts', async () => {
     const dependencies = createDependencies();
     vi.mocked(dependencies.eventBus.read).mockResolvedValueOnce([
       { messageId: 'message-1', event: createEvent() },
@@ -152,8 +157,37 @@ describe('GameStateWorker', () => {
       maxAttempts: 1,
     });
 
+    await expect(worker.processNextBatch()).resolves.toBe(1);
+    expect(dependencies.eventBus.deadLetter).toHaveBeenCalledWith({
+      consumerGroup: 'game-state',
+      message: { messageId: 'message-1', event: createEvent() },
+      reason: 'database unavailable',
+      attempts: 1,
+    });
+    expect(dependencies.eventBus.acknowledge).toHaveBeenCalledWith(
+      'game-state',
+      'message-1',
+    );
+  });
+
+  it('leaves the original message pending when dead-lettering fails', async () => {
+    const dependencies = createDependencies();
+    vi.mocked(dependencies.eventBus.read).mockResolvedValueOnce([
+      { messageId: 'message-1', event: createEvent() },
+    ]);
+    vi.mocked(dependencies.states.save).mockRejectedValueOnce(
+      new Error('database unavailable'),
+    );
+    vi.mocked(dependencies.eventBus.deadLetter).mockRejectedValueOnce(
+      new Error('redis unavailable'),
+    );
+    const worker = new GameStateWorker(dependencies, {
+      consumerName: 'worker-1',
+      maxAttempts: 1,
+    });
+
     await expect(worker.processNextBatch()).rejects.toThrow(
-      'database unavailable',
+      'redis unavailable',
     );
     expect(dependencies.eventBus.acknowledge).not.toHaveBeenCalled();
   });
@@ -177,6 +211,7 @@ describe('GameStateWorker', () => {
     expect(dependencies.states.save).toHaveBeenCalledTimes(2);
     expect(dependencies.eventBus.acknowledge).toHaveBeenCalledOnce();
     expect(dependencies.eventBus.read).toHaveBeenCalledOnce();
+    expect(dependencies.eventBus.deadLetter).not.toHaveBeenCalled();
   });
 
   it('does not apply an event twice after acknowledgement failure and restart', async () => {
@@ -211,6 +246,7 @@ describe('GameStateWorker', () => {
       'was not acknowledged',
     );
     expect(storedState.homeScore).toBe(3);
+    expect(firstDependencies.eventBus.deadLetter).not.toHaveBeenCalled();
 
     const restartedDependencies = createDependencies();
     vi.mocked(restartedDependencies.states.findByGameId).mockResolvedValueOnce(
@@ -232,7 +268,7 @@ describe('GameStateWorker', () => {
     expect(storedState.homeScore).toBe(3);
   });
 
-  it('does not persist or acknowledge an out-of-order event', async () => {
+  it('dead-letters an out-of-order event without persisting it', async () => {
     const dependencies = createDependencies();
     const current = applyGameEvent(
       createInitialGameState(game),
@@ -247,10 +283,17 @@ describe('GameStateWorker', () => {
       maxAttempts: 1,
     });
 
-    await expect(worker.processNextBatch()).rejects.toThrow(
-      'sequence 1 is not after 2',
-    );
+    await expect(worker.processNextBatch()).resolves.toBe(1);
     expect(dependencies.states.save).not.toHaveBeenCalled();
-    expect(dependencies.eventBus.acknowledge).not.toHaveBeenCalled();
+    expect(dependencies.eventBus.deadLetter).toHaveBeenCalledWith({
+      consumerGroup: 'game-state',
+      message: { messageId: 'message-1', event: createEvent() },
+      reason: 'event evt-1 sequence 1 is not after 2',
+      attempts: 1,
+    });
+    expect(dependencies.eventBus.acknowledge).toHaveBeenCalledWith(
+      'game-state',
+      'message-1',
+    );
   });
 });

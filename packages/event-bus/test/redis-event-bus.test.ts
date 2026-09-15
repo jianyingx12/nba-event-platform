@@ -149,6 +149,27 @@ describe('RedisEventBus', () => {
     );
   });
 
+  it('preserves failed messages in a dead-letter stream', async () => {
+    const client = createRedisClient();
+    const eventBus = new RedisEventBus(client, 'test-events');
+
+    await expect(
+      eventBus.deadLetter({
+        consumerGroup: 'game-state',
+        message: { messageId: '1710000000000-0', event: gameEvent },
+        reason: 'database unavailable',
+        attempts: 3,
+      }),
+    ).resolves.toBe('1710000000000-0');
+    expect(client.xAdd).toHaveBeenCalledWith('test-events:dead-letter', '*', {
+      sourceMessageId: '1710000000000-0',
+      consumerGroup: 'game-state',
+      attempts: '3',
+      reason: 'database unavailable',
+      event: JSON.stringify(gameEvent),
+    });
+  });
+
   it('closes an open client', async () => {
     const client = createRedisClient();
     const eventBus = new RedisEventBus(client);

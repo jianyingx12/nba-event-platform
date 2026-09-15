@@ -20,11 +20,19 @@ export interface ClaimPendingEventsOptions {
   count?: number;
 }
 
+export interface DeadLetterOptions {
+  consumerGroup: string;
+  message: EventBusMessage;
+  reason: string;
+  attempts: number;
+}
+
 export interface EventBus {
   publish(event: GameEvent): Promise<string>;
   ensureConsumerGroup(consumerGroup: string): Promise<void>;
   read(options: ReadEventsOptions): Promise<EventBusMessage[]>;
   acknowledge(consumerGroup: string, messageId: string): Promise<boolean>;
   claimPending(options: ClaimPendingEventsOptions): Promise<EventBusMessage[]>;
+  deadLetter(options: DeadLetterOptions): Promise<string>;
   close(): Promise<void>;
 }

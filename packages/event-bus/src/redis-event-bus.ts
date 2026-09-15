@@ -3,6 +3,7 @@ import { createClient } from 'redis';
 
 import type {
   ClaimPendingEventsOptions,
+  DeadLetterOptions,
   EventBus,
   EventBusMessage,
   ReadEventsOptions,
@@ -141,6 +142,18 @@ export class RedisEventBus implements EventBus {
             },
           ],
     );
+  }
+
+  async deadLetter(options: DeadLetterOptions): Promise<string> {
+    const event = gameEventSchema.parse(options.message.event);
+
+    return this.client.xAdd(`${this.streamKey}:dead-letter`, '*', {
+      sourceMessageId: options.message.messageId,
+      consumerGroup: options.consumerGroup,
+      attempts: String(options.attempts),
+      reason: options.reason,
+      event: JSON.stringify(event),
+    });
   }
 
   isReady(): boolean {

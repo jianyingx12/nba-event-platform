@@ -1,5 +1,6 @@
 export type {
   ClaimPendingEventsOptions,
+  DeadLetterOptions,
   EventBus,
   EventBusMessage,
   ReadEventsOptions,
