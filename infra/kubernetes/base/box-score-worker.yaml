@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: box-score-worker
+  namespace: nba-event-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: box-score-worker
+  template:
+    metadata:
+      labels:
+        app: box-score-worker
+    spec:
+      containers:
+        - name: box-score-worker
+          image: nba-event-platform-box-score-worker:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: application-config
+            - secretRef:
+                name: application-credentials
+          env:
+            - name: CONSUMER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
