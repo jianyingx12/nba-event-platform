@@ -1,5 +1,6 @@
 import type {
   Game,
+  GameAnalytics,
   GameEvent,
   GameState,
   Player,
@@ -65,6 +66,39 @@ export const playerGameStats = {
   freeThrowsMade: 4,
   freeThrowsAttempted: 5,
 } satisfies PlayerGameStats;
+
+export const gameAnalytics = {
+  gameId: game.gameId,
+  homeTeam: {
+    teamId: homeTeam.teamId,
+    points: 84,
+    turnovers: 9,
+    fieldGoalsMade: 31,
+    fieldGoalsAttempted: 67,
+    fieldGoalPercentage: 31 / 67,
+    threePointersMade: 12,
+    threePointersAttempted: 29,
+    threePointPercentage: 12 / 29,
+    freeThrowsMade: 10,
+    freeThrowsAttempted: 12,
+    freeThrowPercentage: 10 / 12,
+  },
+  awayTeam: {
+    teamId: awayTeam.teamId,
+    points: 79,
+    turnovers: 11,
+    fieldGoalsMade: 29,
+    fieldGoalsAttempted: 65,
+    fieldGoalPercentage: 29 / 65,
+    threePointersMade: 9,
+    threePointersAttempted: 27,
+    threePointPercentage: 9 / 27,
+    freeThrowsMade: 12,
+    freeThrowsAttempted: 15,
+    freeThrowPercentage: 12 / 15,
+  },
+  lastProcessedSequence: 281,
+} satisfies GameAnalytics;
 
 export const validGameEvent = {
   eventId: 'evt-105',

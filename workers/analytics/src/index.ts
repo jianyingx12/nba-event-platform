@@ -1,6 +1,5 @@
 export {
   applyAnalyticsEvent,
   createInitialGameAnalytics,
-  type GameAnalytics,
-  type TeamAnalytics,
 } from './analytics.js';
+export type { GameAnalytics, TeamAnalytics } from '@nba-event-platform/schemas';

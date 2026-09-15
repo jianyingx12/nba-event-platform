@@ -1,63 +1,45 @@
 import {
+  gameAnalyticsSchema,
   gameEventSchema,
   gameSchema,
   type Game,
+  type GameAnalytics,
   type GameEvent,
+  type TeamAnalytics,
 } from '@nba-event-platform/schemas';
-
-export interface TeamAnalytics {
-  teamId: string;
-  points: number;
-  turnovers: number;
-  fieldGoalsMade: number;
-  fieldGoalsAttempted: number;
-  fieldGoalPercentage: number;
-  threePointersMade: number;
-  threePointersAttempted: number;
-  threePointPercentage: number;
-  freeThrowsMade: number;
-  freeThrowsAttempted: number;
-  freeThrowPercentage: number;
-}
-
-export interface GameAnalytics {
-  gameId: string;
-  homeTeam: TeamAnalytics;
-  awayTeam: TeamAnalytics;
-  lastProcessedSequence: number;
-}
 
 export function createInitialGameAnalytics(game: Game): GameAnalytics {
   const value = gameSchema.parse(game);
 
-  return {
+  return gameAnalyticsSchema.parse({
     gameId: value.gameId,
     homeTeam: createInitialTeamAnalytics(value.homeTeamId),
     awayTeam: createInitialTeamAnalytics(value.awayTeamId),
     lastProcessedSequence: 0,
-  };
+  });
 }
 
 export function applyAnalyticsEvent(
   analytics: GameAnalytics,
   event: GameEvent,
 ): GameAnalytics {
+  const current = gameAnalyticsSchema.parse(analytics);
   const nextEvent = gameEventSchema.parse(event);
 
-  if (nextEvent.gameId !== analytics.gameId) {
+  if (nextEvent.gameId !== current.gameId) {
     throw new Error(`event ${nextEvent.eventId} belongs to a different game`);
   }
 
-  if (nextEvent.sequence <= analytics.lastProcessedSequence) {
+  if (nextEvent.sequence <= current.lastProcessedSequence) {
     throw new Error(
-      `event ${nextEvent.eventId} sequence ${nextEvent.sequence} is not after ${analytics.lastProcessedSequence}`,
+      `event ${nextEvent.eventId} sequence ${nextEvent.sequence} is not after ${current.lastProcessedSequence}`,
     );
   }
 
   const next: GameAnalytics = {
-    ...analytics,
-    homeTeam: { ...analytics.homeTeam },
-    awayTeam: { ...analytics.awayTeam },
+    ...current,
+    homeTeam: { ...current.homeTeam },
+    awayTeam: { ...current.awayTeam },
     lastProcessedSequence: nextEvent.sequence,
   };
 
@@ -67,7 +49,7 @@ export function applyAnalyticsEvent(
     updatePercentages(team);
   }
 
-  return next;
+  return gameAnalyticsSchema.parse(next);
 }
 
 function createInitialTeamAnalytics(teamId: string): TeamAnalytics {

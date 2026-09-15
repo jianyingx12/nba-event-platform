@@ -34,6 +34,7 @@ describe('database migrations', () => {
     expect(migrations.map((migration) => migration.name)).toEqual([
       '001_initial_schema.sql',
       '002_player_stats_sequence.sql',
+      '003_game_analytics.sql',
     ]);
     expect(migrations[0]?.sql).toContain('CREATE TABLE games');
     expect(migrations[0]?.sql).toContain('CREATE TABLE game_events');
@@ -41,6 +42,7 @@ describe('database migrations', () => {
     expect(migrations[0]?.sql).toContain('CREATE TABLE game_state');
     expect(migrations[0]?.sql).toContain('CREATE TABLE player_game_stats');
     expect(migrations[1]?.sql).toContain('last_processed_sequence');
+    expect(migrations[2]?.sql).toContain('CREATE TABLE game_analytics');
   });
 
   it('applies an unapplied migration inside a transaction', async () => {
