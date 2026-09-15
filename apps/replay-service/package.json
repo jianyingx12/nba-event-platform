@@ -15,6 +15,11 @@
     "@nba-event-platform/schemas": "workspace:*"
   },
   "devDependencies": {
+    "@nba-event-platform/box-score-worker": "workspace:*",
+    "@nba-event-platform/database": "workspace:*",
+    "@nba-event-platform/event-bus": "workspace:*",
+    "@nba-event-platform/game-state-worker": "workspace:*",
+    "@nba-event-platform/ingestion-api": "workspace:*",
     "@types/node": "22.20.2"
   }
 }

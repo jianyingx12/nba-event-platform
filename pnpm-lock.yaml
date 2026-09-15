@@ -52,6 +52,21 @@ importers:
         specifier: workspace:*
         version: link:../../packages/schemas
     devDependencies:
+      '@nba-event-platform/box-score-worker':
+        specifier: workspace:*
+        version: link:../../workers/box-score
+      '@nba-event-platform/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@nba-event-platform/event-bus':
+        specifier: workspace:*
+        version: link:../../packages/event-bus
+      '@nba-event-platform/game-state-worker':
+        specifier: workspace:*
+        version: link:../../workers/game-state
+      '@nba-event-platform/ingestion-api':
+        specifier: workspace:*
+        version: link:../ingestion-api
       '@types/node':
         specifier: 22.20.2
         version: 22.20.2
