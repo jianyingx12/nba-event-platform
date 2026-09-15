@@ -6,7 +6,11 @@ import { applyPlayerGameEvent, createInitialPlayerGameStats } from './stats.js';
 export interface BoxScoreWorkerDependencies {
   eventBus: Pick<
     EventBus,
-    'acknowledge' | 'claimPending' | 'ensureConsumerGroup' | 'read'
+    | 'acknowledge'
+    | 'claimPending'
+    | 'deadLetter'
+    | 'ensureConsumerGroup'
+    | 'read'
   >;
   stats: Pick<PlayerGameStatsRepository, 'find' | 'save'>;
 }
@@ -77,7 +81,18 @@ export class BoxScoreWorker {
         return;
       } catch (error) {
         if (attempt === maxAttempts) {
-          throw error;
+          if (error instanceof AcknowledgementError) {
+            throw error;
+          }
+
+          await this.dependencies.eventBus.deadLetter({
+            consumerGroup: this.consumerGroup,
+            message,
+            reason: getErrorMessage(error),
+            attempts: maxAttempts,
+          });
+          await this.acknowledgeMessage(message);
+          return;
         }
 
         const retryDelayMs = this.options.retryDelayMs ?? 1_000;
@@ -116,9 +131,20 @@ export class BoxScoreWorker {
     );
 
     if (!acknowledged) {
-      throw new Error(`message ${message.messageId} was not acknowledged`);
+      throw new AcknowledgementError(message.messageId);
     }
   }
+}
+
+class AcknowledgementError extends Error {
+  constructor(messageId: string) {
+    super(`message ${messageId} was not acknowledged`);
+    this.name = 'AcknowledgementError';
+  }
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function delay(milliseconds: number): Promise<void> {
