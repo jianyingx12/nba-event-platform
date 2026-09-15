@@ -52,6 +52,8 @@ export async function runBoxScoreWorker(
         blockMs: config.blockMs,
         claimIdleMs: config.claimIdleMs,
         consumerName: config.consumerName,
+        maxAttempts: config.maxAttempts,
+        retryDelayMs: config.retryDelayMs,
       },
     );
 
