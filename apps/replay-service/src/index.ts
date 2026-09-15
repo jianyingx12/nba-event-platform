@@ -1,3 +1,4 @@
+export { loadConfig, type ReplayServiceConfig } from './config.js';
 export {
   parseReplayFixture,
   readReplayFixture,
