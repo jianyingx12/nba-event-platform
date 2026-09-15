@@ -29,6 +29,20 @@ services:
       timeout: 5s
       retries: 10
 
+  game-state-worker:
+    build:
+      context: .
+      dockerfile: workers/game-state/Dockerfile
+    environment:
+      CONSUMER_NAME: game-state-worker-1
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nba
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     environment:
