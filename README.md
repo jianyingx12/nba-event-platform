@@ -24,5 +24,6 @@ packages/
   event-bus/ Broker-neutral event delivery contracts
   schemas/   Shared event schemas and TypeScript types
 workers/
+  box-score/  Builds player box scores from events
   game-state/ Builds live game state from events
 ```
