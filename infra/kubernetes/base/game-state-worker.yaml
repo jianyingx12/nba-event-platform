@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: game-state-worker
+  namespace: nba-event-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: game-state-worker
+  template:
+    metadata:
+      labels:
+        app: game-state-worker
+    spec:
+      containers:
+        - name: game-state-worker
+          image: nba-event-platform-game-state-worker:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: application-config
+            - secretRef:
+                name: application-credentials
+          env:
+            - name: CONSUMER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
