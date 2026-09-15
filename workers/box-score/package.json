@@ -7,6 +7,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
+    "start": "node dist/main.js",
     "test": "vitest run",
     "typecheck": "tsc --project tsconfig.json"
   },
@@ -14,5 +15,8 @@
     "@nba-event-platform/database": "workspace:*",
     "@nba-event-platform/event-bus": "workspace:*",
     "@nba-event-platform/schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.2"
   }
 }
