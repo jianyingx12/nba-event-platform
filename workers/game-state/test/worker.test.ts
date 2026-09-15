@@ -17,9 +17,13 @@ import { createEvent, game } from './fixtures.js';
 function createDependencies(): GameStateWorkerDependencies {
   const eventBus = {
     acknowledge: vi.fn(async () => true),
+    claimPending: vi.fn(async () => []),
     ensureConsumerGroup: vi.fn(async () => undefined),
     read: vi.fn(async () => []),
-  } satisfies Pick<EventBus, 'acknowledge' | 'ensureConsumerGroup' | 'read'>;
+  } satisfies Pick<
+    EventBus,
+    'acknowledge' | 'claimPending' | 'ensureConsumerGroup' | 'read'
+  >;
   const games = {
     findById: vi.fn(async () => game),
   } satisfies Pick<GameRepository, 'findById'>;
@@ -43,12 +47,44 @@ describe('GameStateWorker', () => {
     expect(dependencies.eventBus.ensureConsumerGroup).toHaveBeenCalledWith(
       'game-state',
     );
+    expect(dependencies.eventBus.claimPending).toHaveBeenCalledWith({
+      consumerGroup: 'game-state',
+      consumerName: 'worker-1',
+      minIdleTimeMs: 30_000,
+      count: 10,
+    });
     expect(dependencies.eventBus.read).toHaveBeenCalledWith({
       consumerGroup: 'game-state',
       consumerName: 'worker-1',
       count: 10,
       blockMs: 100,
     });
+  });
+
+  it('processes an abandoned message before reading new messages', async () => {
+    const dependencies = createDependencies();
+    const event = createEvent();
+    vi.mocked(dependencies.eventBus.claimPending).mockResolvedValueOnce([
+      { messageId: 'pending-message', event },
+    ]);
+    const worker = new GameStateWorker(dependencies, {
+      consumerName: 'recovery-worker',
+      claimIdleMs: 1_000,
+    });
+
+    await expect(worker.processNextBatch()).resolves.toBe(1);
+    expect(dependencies.eventBus.claimPending).toHaveBeenCalledWith({
+      consumerGroup: 'game-state',
+      consumerName: 'recovery-worker',
+      minIdleTimeMs: 1_000,
+      count: 10,
+    });
+    expect(dependencies.eventBus.read).not.toHaveBeenCalled();
+    expect(dependencies.states.save).toHaveBeenCalledOnce();
+    expect(dependencies.eventBus.acknowledge).toHaveBeenCalledWith(
+      'game-state',
+      'pending-message',
+    );
   });
 
   it('updates existing state and acknowledges after saving', async () => {

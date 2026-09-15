@@ -7,7 +7,10 @@ import type { EventBus, EventBusMessage } from '@nba-event-platform/event-bus';
 import { applyGameEvent, createInitialGameState } from './state.js';
 
 export interface GameStateWorkerDependencies {
-  eventBus: Pick<EventBus, 'acknowledge' | 'ensureConsumerGroup' | 'read'>;
+  eventBus: Pick<
+    EventBus,
+    'acknowledge' | 'claimPending' | 'ensureConsumerGroup' | 'read'
+  >;
   games: Pick<GameRepository, 'findById'>;
   states: Pick<GameStateRepository, 'findByGameId' | 'save'>;
 }
@@ -17,6 +20,7 @@ export interface GameStateWorkerOptions {
   consumerGroup?: string;
   batchSize?: number;
   blockMs?: number;
+  claimIdleMs?: number;
 }
 
 export class GameStateWorker {
@@ -33,12 +37,22 @@ export class GameStateWorker {
   async processNextBatch(): Promise<number> {
     await this.ensureInitialized();
 
-    const messages = await this.dependencies.eventBus.read({
+    const count = this.options.batchSize ?? 10;
+    const recoveredMessages = await this.dependencies.eventBus.claimPending({
       consumerGroup: this.consumerGroup,
       consumerName: this.options.consumerName,
-      count: this.options.batchSize ?? 10,
-      blockMs: this.options.blockMs ?? 5_000,
+      minIdleTimeMs: this.options.claimIdleMs ?? 30_000,
+      count,
     });
+    const messages =
+      recoveredMessages.length > 0
+        ? recoveredMessages
+        : await this.dependencies.eventBus.read({
+            consumerGroup: this.consumerGroup,
+            consumerName: this.options.consumerName,
+            count,
+            blockMs: this.options.blockMs ?? 5_000,
+          });
 
     for (const message of messages) {
       await this.processMessage(message);

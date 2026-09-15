@@ -52,6 +52,7 @@ export async function runGameStateWorker(
       {
         batchSize: config.batchSize,
         blockMs: config.blockMs,
+        claimIdleMs: config.claimIdleMs,
         consumerName: config.consumerName,
       },
     );
