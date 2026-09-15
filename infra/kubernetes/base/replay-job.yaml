@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: replay-sample-game
+  namespace: nba-event-platform
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: replay-service
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-api
+          image: nba-event-platform-replay-service:latest
+          imagePullPolicy: Never
+          command:
+            - sh
+            - -c
+            - until wget -q -O - http://ingestion-api:3000/ready; do sleep 2; done
+      containers:
+        - name: replay-service
+          image: nba-event-platform-replay-service:latest
+          imagePullPolicy: Never
+          env:
+            - name: FIXTURE_PATH
+              value: /app/data/fixtures/sample-game.json
+            - name: INGESTION_API_URL
+              value: http://ingestion-api:3000
+            - name: REPLAY_SPEED
+              value: max
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
