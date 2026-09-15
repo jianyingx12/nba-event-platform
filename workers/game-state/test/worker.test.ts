@@ -149,12 +149,34 @@ describe('GameStateWorker', () => {
     );
     const worker = new GameStateWorker(dependencies, {
       consumerName: 'worker-1',
+      maxAttempts: 1,
     });
 
     await expect(worker.processNextBatch()).rejects.toThrow(
       'database unavailable',
     );
     expect(dependencies.eventBus.acknowledge).not.toHaveBeenCalled();
+  });
+
+  it('retries a transient persistence failure with the same message', async () => {
+    const dependencies = createDependencies();
+    const event = createEvent();
+    vi.mocked(dependencies.eventBus.read).mockResolvedValueOnce([
+      { messageId: 'message-1', event },
+    ]);
+    vi.mocked(dependencies.states.save).mockRejectedValueOnce(
+      new Error('database unavailable'),
+    );
+    const worker = new GameStateWorker(dependencies, {
+      consumerName: 'worker-1',
+      maxAttempts: 3,
+      retryDelayMs: 0,
+    });
+
+    await expect(worker.processNextBatch()).resolves.toBe(1);
+    expect(dependencies.states.save).toHaveBeenCalledTimes(2);
+    expect(dependencies.eventBus.acknowledge).toHaveBeenCalledOnce();
+    expect(dependencies.eventBus.read).toHaveBeenCalledOnce();
   });
 
   it('does not apply an event twice after acknowledgement failure and restart', async () => {
@@ -182,6 +204,7 @@ describe('GameStateWorker', () => {
     );
     const firstWorker = new GameStateWorker(firstDependencies, {
       consumerName: 'worker-1',
+      maxAttempts: 1,
     });
 
     await expect(firstWorker.processNextBatch()).rejects.toThrow(
@@ -221,6 +244,7 @@ describe('GameStateWorker', () => {
     ]);
     const worker = new GameStateWorker(dependencies, {
       consumerName: 'worker-1',
+      maxAttempts: 1,
     });
 
     await expect(worker.processNextBatch()).rejects.toThrow(

@@ -16,7 +16,9 @@ describe('game state worker configuration', () => {
       claimIdleMs: 30_000,
       consumerName: 'worker-1',
       databaseUrl: 'postgresql://localhost/nba',
+      maxAttempts: 3,
       redisUrl: 'redis://localhost:6379',
+      retryDelayMs: 1_000,
     });
   });
 
@@ -48,6 +50,12 @@ describe('game state worker configuration', () => {
     );
     expect(() => loadConfig({ ...environment, CLAIM_IDLE_MS: '0' })).toThrow(
       'CLAIM_IDLE_MS must be a positive integer',
+    );
+    expect(() => loadConfig({ ...environment, MAX_ATTEMPTS: '0' })).toThrow(
+      'MAX_ATTEMPTS must be a positive integer',
+    );
+    expect(() => loadConfig({ ...environment, RETRY_DELAY_MS: '-1' })).toThrow(
+      'RETRY_DELAY_MS must be a positive integer',
     );
   });
 });

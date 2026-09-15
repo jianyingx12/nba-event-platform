@@ -21,6 +21,8 @@ export interface GameStateWorkerOptions {
   batchSize?: number;
   blockMs?: number;
   claimIdleMs?: number;
+  maxAttempts?: number;
+  retryDelayMs?: number;
 }
 
 export class GameStateWorker {
@@ -55,7 +57,7 @@ export class GameStateWorker {
           });
 
     for (const message of messages) {
-      await this.processMessage(message);
+      await this.processMessageWithRetries(message);
     }
 
     return messages.length;
@@ -65,6 +67,28 @@ export class GameStateWorker {
     if (!this.initialized) {
       await this.dependencies.eventBus.ensureConsumerGroup(this.consumerGroup);
       this.initialized = true;
+    }
+  }
+
+  private async processMessageWithRetries(
+    message: EventBusMessage,
+  ): Promise<void> {
+    const maxAttempts = Math.max(1, this.options.maxAttempts ?? 3);
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        await this.processMessage(message);
+        return;
+      } catch (error) {
+        if (attempt === maxAttempts) {
+          throw error;
+        }
+
+        const retryDelayMs = this.options.retryDelayMs ?? 1_000;
+        if (retryDelayMs > 0) {
+          await delay(retryDelayMs);
+        }
+      }
     }
   }
 
@@ -107,4 +131,8 @@ export class GameStateWorker {
       throw new Error(`message ${message.messageId} was not acknowledged`);
     }
   }
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }

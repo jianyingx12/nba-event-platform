@@ -4,7 +4,9 @@ export interface GameStateWorkerConfig {
   claimIdleMs: number;
   consumerName: string;
   databaseUrl: string;
+  maxAttempts: number;
   redisUrl: string;
+  retryDelayMs: number;
 }
 
 type Environment = Record<string, string | undefined>;
@@ -20,7 +22,13 @@ export function loadConfig(environment: Environment): GameStateWorkerConfig {
     ),
     consumerName: requiredValue(environment, 'CONSUMER_NAME'),
     databaseUrl: requiredValue(environment, 'DATABASE_URL'),
+    maxAttempts: positiveInteger(environment.MAX_ATTEMPTS, 'MAX_ATTEMPTS', 3),
     redisUrl: requiredValue(environment, 'REDIS_URL'),
+    retryDelayMs: positiveInteger(
+      environment.RETRY_DELAY_MS,
+      'RETRY_DELAY_MS',
+      1_000,
+    ),
   };
 }
 

@@ -54,6 +54,8 @@ export async function runGameStateWorker(
         blockMs: config.blockMs,
         claimIdleMs: config.claimIdleMs,
         consumerName: config.consumerName,
+        maxAttempts: config.maxAttempts,
+        retryDelayMs: config.retryDelayMs,
       },
     );
 
