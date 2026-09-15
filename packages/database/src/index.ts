@@ -7,6 +7,7 @@ export {
   type MigrationPool,
   type RunMigrationsOptions,
 } from './migrations.js';
+export { GameAnalyticsRepository } from './repositories/game-analytics-repository.js';
 export { GameEventRepository } from './repositories/game-event-repository.js';
 export { GameRepository } from './repositories/game-repository.js';
 export { GameStateRepository } from './repositories/game-state-repository.js';
