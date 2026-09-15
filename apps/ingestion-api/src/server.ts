@@ -1,6 +1,7 @@
 import {
   createDatabasePool,
   GameEventRepository,
+  GameRepository,
   runMigrations,
 } from '@nba-event-platform/database';
 import {
@@ -33,6 +34,7 @@ export async function startServer(
     const app = buildApp({
       eventBus: connectedEventBus,
       eventStore: new GameEventRepository(database),
+      gameStore: new GameRepository(database),
       logger: true,
       readinessCheck: async () => {
         if (!connectedEventBus.isReady()) {

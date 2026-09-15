@@ -1,14 +1,24 @@
 import type { EventBus } from '@nba-event-platform/event-bus';
-import { gameEventSchema, type GameEvent } from '@nba-event-platform/schemas';
+import {
+  gameEventSchema,
+  gameSchema,
+  type Game,
+  type GameEvent,
+} from '@nba-event-platform/schemas';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 export interface EventStore {
   insert(event: GameEvent): Promise<boolean>;
 }
 
+export interface GameStore {
+  save(game: Game): Promise<Game>;
+}
+
 export interface AppOptions {
   eventBus: Pick<EventBus, 'publish'>;
   eventStore: EventStore;
+  gameStore: GameStore;
   logger?: boolean;
   readinessCheck?: () => boolean | Promise<boolean>;
 }
@@ -29,6 +39,24 @@ export function buildApp(options: AppOptions): FastifyInstance {
     }
 
     return reply.status(503).send({ status: 'unavailable' });
+  });
+
+  app.post('/v1/games', async (request, reply) => {
+    const result = gameSchema.safeParse(request.body);
+
+    if (!result.success) {
+      return reply.status(400).send({
+        accepted: false,
+        reason: 'invalid_game',
+      });
+    }
+
+    const game = await options.gameStore.save(result.data);
+
+    return reply.status(200).send({
+      accepted: true,
+      gameId: game.gameId,
+    });
   });
 
   app.post('/v1/events', async (request, reply) => {

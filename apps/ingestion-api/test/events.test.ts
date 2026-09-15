@@ -1,7 +1,7 @@
 import type { EventBus } from '@nba-event-platform/event-bus';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildApp, type EventStore } from '../src/index.js';
+import { buildApp, type EventStore, type GameStore } from '../src/index.js';
 import { gameEvent } from './fixtures.js';
 
 const apps = [] as ReturnType<typeof buildApp>[];
@@ -22,11 +22,13 @@ function createEventStore(): EventStore {
   };
 }
 
+const gameStore: GameStore = { save: async (game) => game };
+
 describe('POST /v1/events', () => {
   it('publishes a valid event', async () => {
     const eventBus = createEventBus();
     const eventStore = createEventStore();
-    const app = buildApp({ eventBus, eventStore });
+    const app = buildApp({ eventBus, eventStore, gameStore });
     apps.push(app);
 
     const response = await app.inject({
@@ -47,7 +49,7 @@ describe('POST /v1/events', () => {
   it('rejects an invalid event without publishing it', async () => {
     const eventBus = createEventBus();
     const eventStore = createEventStore();
-    const app = buildApp({ eventBus, eventStore });
+    const app = buildApp({ eventBus, eventStore, gameStore });
     apps.push(app);
 
     const response = await app.inject({
@@ -69,7 +71,7 @@ describe('POST /v1/events', () => {
     const eventBus = createEventBus();
     const eventStore = createEventStore();
     vi.mocked(eventStore.insert).mockResolvedValueOnce(false);
-    const app = buildApp({ eventBus, eventStore });
+    const app = buildApp({ eventBus, eventStore, gameStore });
     apps.push(app);
 
     const response = await app.inject({

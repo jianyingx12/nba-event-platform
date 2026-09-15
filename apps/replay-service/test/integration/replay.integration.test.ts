@@ -73,7 +73,11 @@ describeWithServices('replay integration', () => {
       throw new Error('publisher was not initialized');
     }
 
-    app = buildApp({ eventBus: publisher, eventStore: events });
+    app = buildApp({
+      eventBus: publisher,
+      eventStore: events,
+      gameStore: games,
+    });
     ingestionUrl = await app.listen({ host: '127.0.0.1', port: 0 });
   });
 

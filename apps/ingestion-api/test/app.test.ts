@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { buildApp } from '../src/index.js';
+import { buildApp, type GameStore } from '../src/index.js';
 
 const apps = [] as ReturnType<typeof buildApp>[];
 const eventBus = { publish: async () => 'message-1' };
 const eventStore = { insert: async () => true };
+const gameStore: GameStore = { save: async (game) => game };
 
 afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
@@ -12,7 +13,7 @@ afterEach(async () => {
 
 describe('ingestion API health routes', () => {
   it('reports that the process is healthy', async () => {
-    const app = buildApp({ eventBus, eventStore });
+    const app = buildApp({ eventBus, eventStore, gameStore });
     apps.push(app);
 
     const response = await app.inject({ method: 'GET', url: '/health' });
@@ -25,6 +26,7 @@ describe('ingestion API health routes', () => {
     const app = buildApp({
       eventBus,
       eventStore,
+      gameStore,
       readinessCheck: async () => true,
     });
     apps.push(app);
@@ -39,6 +41,7 @@ describe('ingestion API health routes', () => {
     const app = buildApp({
       eventBus,
       eventStore,
+      gameStore,
       readinessCheck: async () => false,
     });
     apps.push(app);
