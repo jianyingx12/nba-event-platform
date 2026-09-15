@@ -57,6 +57,20 @@ services:
       redis:
         condition: service_healthy
 
+  analytics-worker:
+    build:
+      context: .
+      dockerfile: workers/analytics/Dockerfile
+    environment:
+      CONSUMER_NAME: analytics-worker-1
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nba
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     environment:
