@@ -34,15 +34,7 @@ describeWithServices('ingestion API integration', () => {
 
   beforeAll(async () => {
     await runMigrations(database);
-    await database.query(`
-      TRUNCATE TABLE
-        processed_events,
-        player_game_stats,
-        game_state,
-        game_events,
-        games
-      CASCADE
-    `);
+    await database.query('DELETE FROM games WHERE id = $1', [game.gameId]);
     await new GameRepository(database).save(game);
 
     consumer = await connectRedisEventBus({
@@ -62,6 +54,7 @@ describeWithServices('ingestion API integration', () => {
   afterAll(async () => {
     await app?.close();
     await consumer?.close();
+    await database.query('DELETE FROM games WHERE id = $1', [game.gameId]);
     await database.end();
   });
 
