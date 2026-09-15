@@ -1,3 +1,9 @@
+export { loadConfig, type GameStateWorkerConfig } from './config.js';
+export {
+  runGameStateWorker,
+  runWorkerLoop,
+  type BatchProcessor,
+} from './runtime.js';
 export { applyGameEvent, createInitialGameState } from './state.js';
 export {
   GameStateWorker,
