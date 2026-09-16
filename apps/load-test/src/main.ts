@@ -21,7 +21,11 @@ async function main(): Promise<void> {
   const client = new HttpLoadTestIngestionClient(config.baseUrl);
   const report = await runLoadTest(workload, client, config.concurrency);
   const verification = config.databaseUrl
-    ? await verifyWithDatabase(config.databaseUrl, workload)
+    ? await verifyWithDatabase(
+        config.databaseUrl,
+        workload,
+        config.verificationTimeoutMs,
+      )
     : { status: 'skipped' as const, reason: 'DATABASE_URL is not set' };
 
   process.stdout.write(
@@ -32,6 +36,7 @@ async function main(): Promise<void> {
         eventsPerGame: config.eventsPerGame,
         concurrency: config.concurrency,
         duplicateRate: config.duplicateRate,
+        verificationTimeoutMs: config.verificationTimeoutMs,
         ...report,
         verification,
       },
@@ -48,6 +53,7 @@ async function main(): Promise<void> {
 async function verifyWithDatabase(
   databaseUrl: string,
   workload: ReturnType<typeof createWorkload>,
+  timeoutMs: number,
 ) {
   const database = createDatabasePool({
     applicationName: 'load-test',
@@ -59,10 +65,14 @@ async function verifyWithDatabase(
     const states = new GameStateRepository(database);
     const stats = new PlayerGameStatsRepository(database);
 
-    return await verifyWorkload(workload, {
-      findGameState: (gameId) => states.findByGameId(gameId),
-      listPlayerGameStats: (gameId) => stats.listByGameId(gameId),
-    });
+    return await verifyWorkload(
+      workload,
+      {
+        findGameState: (gameId) => states.findByGameId(gameId),
+        listPlayerGameStats: (gameId) => stats.listByGameId(gameId),
+      },
+      { timeoutMs },
+    );
   } finally {
     await database.end();
   }

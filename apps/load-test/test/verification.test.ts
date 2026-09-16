@@ -78,4 +78,25 @@ describe('load test verification', () => {
       `verification failed for ${workload!.game.gameId}`,
     );
   });
+
+  it('uses the configured verification timeout', async () => {
+    const [workload] = createWorkload({
+      eventsPerGame: 1,
+      games: 1,
+      runId: 'timeout-test',
+      startedAt: '2026-09-16T06:00:00.000Z',
+    });
+    const reader: VerificationReader = {
+      findGameState: async () => null,
+      listPlayerGameStats: async () => [],
+    };
+    const timestamps = [0, 60_001];
+
+    await expect(
+      verifyWorkload([workload!], reader, {
+        now: () => timestamps.shift() ?? 60_001,
+        timeoutMs: 60_000,
+      }),
+    ).rejects.toThrow('verification timed out after 60000ms');
+  });
 });

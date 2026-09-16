@@ -12,6 +12,7 @@ describe('load test configuration', () => {
       eventsPerGame: 100,
       games: 1,
       runId: 'load-20260916060000000',
+      verificationTimeoutMs: 30_000,
     });
   });
 
@@ -31,6 +32,8 @@ describe('load test configuration', () => {
           '20',
           '--run-id',
           'benchmark-1',
+          '--verification-timeout-ms',
+          '60000',
         ],
         { DATABASE_URL: 'postgresql://localhost/nba' },
       ),
@@ -42,6 +45,7 @@ describe('load test configuration', () => {
       eventsPerGame: 1_000,
       games: 16,
       runId: 'benchmark-1',
+      verificationTimeoutMs: 60_000,
     });
   });
 
@@ -60,6 +64,9 @@ describe('load test configuration', () => {
     );
     expect(() => loadConfig(['--duplicate-rate', '101'])).toThrow(
       'duplicate-rate must be a number between 0 and 100',
+    );
+    expect(() => loadConfig(['--verification-timeout-ms', '0'])).toThrow(
+      'verification-timeout-ms must be a positive integer',
     );
   });
 });

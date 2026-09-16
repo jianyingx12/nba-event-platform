@@ -8,6 +8,7 @@ export interface LoadTestConfig {
   eventsPerGame: number;
   games: number;
   runId: string;
+  verificationTimeoutMs: number;
 }
 
 type Environment = Record<string, string | undefined>;
@@ -26,6 +27,7 @@ export function loadConfig(
       games: { type: 'string' },
       'run-id': { type: 'string' },
       url: { type: 'string' },
+      'verification-timeout-ms': { type: 'string' },
     },
     strict: true,
   });
@@ -42,6 +44,11 @@ export function loadConfig(
     ),
     games: positiveInteger(values.games, 'games', 1),
     runId: nonEmpty(values['run-id'], 'run-id', createRunId(now)),
+    verificationTimeoutMs: positiveInteger(
+      values['verification-timeout-ms'],
+      'verification-timeout-ms',
+      30_000,
+    ),
   };
 }
 
