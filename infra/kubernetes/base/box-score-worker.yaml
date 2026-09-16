@@ -4,7 +4,6 @@ metadata:
   name: box-score-worker
   namespace: nba-event-platform
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: box-score-worker

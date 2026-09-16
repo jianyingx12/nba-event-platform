@@ -4,7 +4,6 @@ metadata:
   name: game-state-worker
   namespace: nba-event-platform
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: game-state-worker

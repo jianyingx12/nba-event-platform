@@ -9,4 +9,5 @@ resources:
   - game-state-worker.yaml
   - box-score-worker.yaml
   - analytics-worker.yaml
+  - autoscaling.yaml
   - replay-job.yaml

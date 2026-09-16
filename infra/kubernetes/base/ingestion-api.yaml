@@ -19,7 +19,6 @@ metadata:
   name: ingestion-api
   namespace: nba-event-platform
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: ingestion-api
