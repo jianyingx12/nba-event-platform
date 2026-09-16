@@ -1,5 +1,9 @@
-import type { PlayerGameStatsRepository } from '@nba-event-platform/database';
+import type {
+  GameEventRepository,
+  PlayerGameStatsRepository,
+} from '@nba-event-platform/database';
 import type { EventBus, EventBusMessage } from '@nba-event-platform/event-bus';
+import type { GameEvent } from '@nba-event-platform/schemas';
 
 import { applyPlayerGameEvent, createInitialPlayerGameStats } from './stats.js';
 
@@ -12,6 +16,7 @@ export interface BoxScoreWorkerDependencies {
     | 'ensureConsumerGroup'
     | 'read'
   >;
+  events: Pick<GameEventRepository, 'listByGameId'>;
   stats: Pick<PlayerGameStatsRepository, 'find' | 'save'>;
 }
 
@@ -85,6 +90,10 @@ export class BoxScoreWorker {
             throw error;
           }
 
+          if (error instanceof EventHistoryGapError) {
+            return;
+          }
+
           await this.dependencies.eventBus.deadLetter({
             consumerGroup: this.consumerGroup,
             message,
@@ -107,16 +116,33 @@ export class BoxScoreWorker {
     const playerId = message.event.playerId;
 
     if (playerId !== undefined) {
-      const current =
-        (await this.dependencies.stats.find(message.event.gameId, playerId)) ??
-        createInitialPlayerGameStats(message.event.gameId, playerId);
+      const current = await this.dependencies.stats.find(
+        message.event.gameId,
+        playerId,
+      );
 
-      if (message.event.sequence === current.lastProcessedSequence) {
+      if (
+        current !== null &&
+        message.event.sequence <= current.lastProcessedSequence
+      ) {
         await this.acknowledgeMessage(message);
         return;
       }
 
-      const next = applyPlayerGameEvent(current, message.event);
+      const events = await this.dependencies.events.listByGameId(
+        message.event.gameId,
+      );
+      const completeHistory = historyThroughSequence(
+        events,
+        message.event.sequence,
+      );
+      let next = createInitialPlayerGameStats(message.event.gameId, playerId);
+
+      for (const event of completeHistory) {
+        if (event.playerId === playerId) {
+          next = applyPlayerGameEvent(next, event);
+        }
+      }
 
       await this.dependencies.stats.save(next);
     }
@@ -134,6 +160,32 @@ export class BoxScoreWorker {
       throw new AcknowledgementError(message.messageId);
     }
   }
+}
+
+class EventHistoryGapError extends Error {
+  constructor(sequence: number, expectedSequence: number) {
+    super(
+      `event history through sequence ${sequence} is missing sequence ${expectedSequence}`,
+    );
+    this.name = 'EventHistoryGapError';
+  }
+}
+
+function historyThroughSequence(
+  events: GameEvent[],
+  sequence: number,
+): GameEvent[] {
+  const history = events.filter((event) => event.sequence <= sequence);
+
+  for (let index = 0; index < sequence; index += 1) {
+    const expectedSequence = index + 1;
+
+    if (history[index]?.sequence !== expectedSequence) {
+      throw new EventHistoryGapError(sequence, expectedSequence);
+    }
+  }
+
+  return history;
 }
 
 class AcknowledgementError extends Error {

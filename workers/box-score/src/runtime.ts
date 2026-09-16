@@ -1,5 +1,6 @@
 import {
   createDatabasePool,
+  GameEventRepository,
   PlayerGameStatsRepository,
   runMigrations,
 } from '@nba-event-platform/database';
@@ -64,6 +65,7 @@ export async function runBoxScoreWorker(
     const worker = new BoxScoreWorker(
       {
         eventBus,
+        events: new GameEventRepository(database),
         stats: new PlayerGameStatsRepository(database),
       },
       {

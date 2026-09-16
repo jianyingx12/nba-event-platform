@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PlayerGameStatsRepository } from '../../src/index.js';
 import { playerGameStats } from './fixtures.js';
@@ -34,12 +34,37 @@ describe('PlayerGameStatsRepository', () => {
       playerGameStats,
     );
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('ON CONFLICT (game_id, player_id) DO UPDATE'),
+      expect.stringContaining(
+        'WHERE player_game_stats.last_processed_sequence <= EXCLUDED.last_processed_sequence',
+      ),
       expect.arrayContaining([
         playerGameStats.gameId,
         playerGameStats.playerId,
       ]),
     );
+  });
+
+  it('keeps newer stored statistics when an older write loses a race', async () => {
+    const newerStats = {
+      ...playerGameStats,
+      lastProcessedSequence: playerGameStats.lastProcessedSequence + 1,
+    };
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            ...statsRow,
+            last_processed_sequence: newerStats.lastProcessedSequence,
+          },
+        ],
+      });
+    const repository = new PlayerGameStatsRepository({ query });
+
+    await expect(repository.save(playerGameStats)).resolves.toEqual(newerStats);
+    expect(query).toHaveBeenCalledTimes(2);
   });
 
   it('returns one player or all players for a game', async () => {

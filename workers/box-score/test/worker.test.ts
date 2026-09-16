@@ -1,4 +1,7 @@
-import type { PlayerGameStatsRepository } from '@nba-event-platform/database';
+import type {
+  GameEventRepository,
+  PlayerGameStatsRepository,
+} from '@nba-event-platform/database';
 import type { EventBus } from '@nba-event-platform/event-bus';
 import type { PlayerGameStats } from '@nba-event-platform/schemas';
 import { describe, expect, it, vi } from 'vitest';
@@ -31,8 +34,11 @@ function createDependencies(): BoxScoreWorkerDependencies {
     ),
     save: vi.fn(async (value: PlayerGameStats) => value),
   } satisfies Pick<PlayerGameStatsRepository, 'find' | 'save'>;
+  const events = {
+    listByGameId: vi.fn(async () => [createEvent()]),
+  } satisfies Pick<GameEventRepository, 'listByGameId'>;
 
-  return { eventBus, stats };
+  return { eventBus, events, stats };
 }
 
 describe('BoxScoreWorker', () => {
@@ -90,6 +96,7 @@ describe('BoxScoreWorker', () => {
   it('updates existing stats and acknowledges after saving', async () => {
     const dependencies = createDependencies();
     const event = createEvent({ eventType: 'shot_made', points: 3 });
+    vi.mocked(dependencies.events.listByGameId).mockResolvedValueOnce([event]);
     vi.mocked(dependencies.eventBus.read).mockResolvedValueOnce([
       { messageId: 'message-1', event },
     ]);
@@ -151,6 +158,7 @@ describe('BoxScoreWorker', () => {
 
     expect(dependencies.stats.find).not.toHaveBeenCalled();
     expect(dependencies.stats.save).not.toHaveBeenCalled();
+    expect(dependencies.events.listByGameId).not.toHaveBeenCalled();
     expect(dependencies.eventBus.acknowledge).toHaveBeenCalledWith(
       'box-score',
       'message-1',
@@ -234,6 +242,9 @@ describe('BoxScoreWorker', () => {
       event.playerId!,
     );
     const firstDependencies = createDependencies();
+    vi.mocked(firstDependencies.events.listByGameId).mockResolvedValueOnce([
+      event,
+    ]);
     vi.mocked(firstDependencies.stats.find).mockImplementation(
       async () => storedStats,
     );
@@ -280,7 +291,7 @@ describe('BoxScoreWorker', () => {
     expect(storedStats.points).toBe(3);
   });
 
-  it('dead-letters an out-of-order player event without persisting it', async () => {
+  it('acknowledges a stale player event without persisting it again', async () => {
     const dependencies = createDependencies();
     const current = {
       ...createInitialPlayerGameStats('bos-nyk-2026-01', 'player-0'),
@@ -297,15 +308,28 @@ describe('BoxScoreWorker', () => {
 
     await expect(worker.processNextBatch()).resolves.toBe(1);
     expect(dependencies.stats.save).not.toHaveBeenCalled();
-    expect(dependencies.eventBus.deadLetter).toHaveBeenCalledWith({
-      consumerGroup: 'box-score',
-      message: { messageId: 'message-1', event: createEvent() },
-      reason: 'event evt-1 sequence 1 is not after 2',
-      attempts: 1,
-    });
+    expect(dependencies.eventBus.deadLetter).not.toHaveBeenCalled();
     expect(dependencies.eventBus.acknowledge).toHaveBeenCalledWith(
       'box-score',
       'message-1',
     );
+  });
+
+  it('leaves a player event pending when persisted history has a gap', async () => {
+    const dependencies = createDependencies();
+    const event = createEvent({ eventId: 'evt-2', sequence: 2 });
+    vi.mocked(dependencies.eventBus.read).mockResolvedValueOnce([
+      { messageId: 'message-2', event },
+    ]);
+    vi.mocked(dependencies.events.listByGameId).mockResolvedValueOnce([event]);
+    const worker = new BoxScoreWorker(dependencies, {
+      consumerName: 'worker-1',
+      maxAttempts: 1,
+    });
+
+    await expect(worker.processNextBatch()).resolves.toBe(1);
+    expect(dependencies.stats.save).not.toHaveBeenCalled();
+    expect(dependencies.eventBus.deadLetter).not.toHaveBeenCalled();
+    expect(dependencies.eventBus.acknowledge).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,6 @@
 import {
   createDatabasePool,
+  GameEventRepository,
   GameRepository,
   PlayerGameStatsRepository,
   runMigrations,
@@ -59,6 +60,7 @@ describeWithServices('box score worker integration', () => {
     connectionString: databaseUrl,
   });
   const stats = new PlayerGameStatsRepository(database);
+  const eventRepository = new GameEventRepository(database);
   const redisErrors: Error[] = [];
   let eventBus: RedisEventBus | undefined;
 
@@ -85,11 +87,12 @@ describeWithServices('box score worker integration', () => {
     }
 
     for (const event of events) {
+      await eventRepository.insert(event);
       await eventBus.publish(event);
     }
 
     const worker = new BoxScoreWorker(
-      { eventBus, stats },
+      { eventBus, events: eventRepository, stats },
       {
         batchSize: events.length,
         blockMs: 1_000,

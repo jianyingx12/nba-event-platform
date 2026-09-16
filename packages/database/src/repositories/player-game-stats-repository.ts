@@ -29,6 +29,7 @@ const savePlayerGameStatsSql = `
     free_throws_made = EXCLUDED.free_throws_made,
     free_throws_attempted = EXCLUDED.free_throws_attempted,
     updated_at = NOW()
+  WHERE player_game_stats.last_processed_sequence <= EXCLUDED.last_processed_sequence
   RETURNING *
 `;
 
@@ -84,6 +85,14 @@ export class PlayerGameStatsRepository {
       value.freeThrowsMade,
       value.freeThrowsAttempted,
     ]);
+
+    if (result.rowCount === 0) {
+      const current = await this.find(value.gameId, value.playerId);
+
+      if (current !== null) {
+        return current;
+      }
+    }
 
     if (result.rowCount !== 1 || result.rows[0] === undefined) {
       throw new Error(
