@@ -44,9 +44,16 @@ describe('load test verification', () => {
       listPlayerGameStats: async () => expected.stats,
     };
 
-    await expect(verifyWorkload([workload!], reader)).resolves.toEqual({
+    const timestamps = [100, 125.678];
+
+    await expect(
+      verifyWorkload([workload!], reader, {
+        now: () => timestamps.shift() ?? 0,
+      }),
+    ).resolves.toEqual({
       gamesVerified: 1,
       playerRowsVerified: expected.stats.length,
+      processingWaitMs: 25.68,
       status: 'passed',
     });
   });

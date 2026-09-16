@@ -20,10 +20,12 @@ export interface ExpectedGameResults {
 export interface VerificationReport {
   gamesVerified: number;
   playerRowsVerified: number;
+  processingWaitMs: number;
   status: 'passed';
 }
 
 export interface VerificationOptions {
+  now?: () => number;
   pollIntervalMs?: number;
   timeoutMs?: number;
 }
@@ -36,7 +38,9 @@ export async function verifyWorkload(
   const expected = workload.map(buildExpectedResults);
   const timeoutMs = options.timeoutMs ?? 30_000;
   const pollIntervalMs = options.pollIntervalMs ?? 100;
-  const deadline = Date.now() + timeoutMs;
+  const now = options.now ?? performance.now.bind(performance);
+  const startedAt = now();
+  const deadline = startedAt + timeoutMs;
 
   while (true) {
     const actual = await Promise.all(
@@ -55,11 +59,12 @@ export async function verifyWorkload(
           (total, game) => total + game.stats.length,
           0,
         ),
+        processingWaitMs: round(now() - startedAt),
         status: 'passed',
       };
     }
 
-    if (Date.now() >= deadline) {
+    if (now() >= deadline) {
       throw new Error(`verification timed out after ${timeoutMs}ms`);
     }
 
@@ -215,4 +220,8 @@ function assertMatches(
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function round(value: number): number {
+  return Math.round(value * 100) / 100;
 }
