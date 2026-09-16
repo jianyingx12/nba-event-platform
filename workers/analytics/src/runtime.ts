@@ -8,6 +8,11 @@ import {
   connectRedisEventBus,
   type RedisEventBus,
 } from '@nba-event-platform/event-bus';
+import {
+  closeHealthServer,
+  startHealthServer,
+} from '@nba-event-platform/health';
+import type { Server } from 'node:http';
 
 import { loadConfig, type AnalyticsWorkerConfig } from './config.js';
 import { AnalyticsWorker } from './worker.js';
@@ -35,12 +40,26 @@ export async function runAnalyticsWorker(
     connectionTimeoutMs: 5_000,
   });
   let eventBus: RedisEventBus | undefined;
+  let healthServer: Server | undefined;
 
   try {
     await runMigrations(database);
     eventBus = await connectRedisEventBus({
       url: config.redisUrl,
       onError: (error) => writeErrorLog('redis', error),
+    });
+    const connectedEventBus = eventBus;
+    healthServer = await startHealthServer({
+      host: config.healthHost,
+      port: config.healthPort,
+      readinessCheck: async () => {
+        if (!connectedEventBus.isReady()) {
+          return false;
+        }
+
+        await database.query('SELECT 1');
+        return true;
+      },
     });
 
     const worker = new AnalyticsWorker(
@@ -61,6 +80,9 @@ export async function runAnalyticsWorker(
 
     await runWorkerLoop(worker, signal);
   } finally {
+    if (healthServer) {
+      await closeHealthServer(healthServer);
+    }
     await eventBus?.close();
     await database.end();
   }

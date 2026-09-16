@@ -4,6 +4,8 @@ export interface AnalyticsWorkerConfig {
   claimIdleMs: number;
   consumerName: string;
   databaseUrl: string;
+  healthHost: string;
+  healthPort: number;
   maxAttempts: number;
   redisUrl: string;
   retryDelayMs: number;
@@ -22,6 +24,8 @@ export function loadConfig(environment: Environment): AnalyticsWorkerConfig {
     ),
     consumerName: requiredValue(environment, 'CONSUMER_NAME'),
     databaseUrl: requiredValue(environment, 'DATABASE_URL'),
+    healthHost: environment.HEALTH_HOST?.trim() || '0.0.0.0',
+    healthPort: port(environment.HEALTH_PORT, 'HEALTH_PORT', 3_000),
     maxAttempts: positiveInteger(environment.MAX_ATTEMPTS, 'MAX_ATTEMPTS', 3),
     redisUrl: requiredValue(environment, 'REDIS_URL'),
     retryDelayMs: positiveInteger(
@@ -40,6 +44,24 @@ function requiredValue(environment: Environment, name: string): string {
   }
 
   return value;
+}
+
+function port(
+  value: string | undefined,
+  name: string,
+  defaultValue: number,
+): number {
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65_535) {
+    throw new Error(`${name} must be an integer between 1 and 65535`);
+  }
+
+  return parsed;
 }
 
 function positiveInteger(
