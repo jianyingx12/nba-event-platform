@@ -14,6 +14,7 @@
   "dependencies": {
     "@nba-event-platform/database": "workspace:*",
     "@nba-event-platform/event-bus": "workspace:*",
+    "@nba-event-platform/health": "workspace:*",
     "@nba-event-platform/schemas": "workspace:*"
   },
   "devDependencies": {
