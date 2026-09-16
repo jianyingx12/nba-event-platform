@@ -28,6 +28,8 @@ spec:
                   fieldPath: metadata.name
             - name: HEALTH_PORT
               value: '3000'
+            - name: CLAIM_IDLE_MS
+              value: '5000'
           ports:
             - name: health
               containerPort: 3000
