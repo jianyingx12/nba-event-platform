@@ -7,6 +7,7 @@ import type { EventBus, EventBusMessage } from '@nba-event-platform/event-bus';
 import {
   applyAnalyticsEvent,
   createInitialGameAnalytics,
+  EventSequenceGapError,
 } from './analytics.js';
 
 export interface AnalyticsWorkerDependencies {
@@ -92,6 +93,10 @@ export class AnalyticsWorker {
             throw error;
           }
 
+          if (error instanceof EventSequenceGapError) {
+            return;
+          }
+
           await this.dependencies.eventBus.deadLetter({
             consumerGroup: this.consumerGroup,
             message,
@@ -117,7 +122,7 @@ export class AnalyticsWorker {
 
     if (
       analytics !== null &&
-      message.event.sequence === analytics.lastProcessedSequence
+      message.event.sequence <= analytics.lastProcessedSequence
     ) {
       await this.acknowledgeMessage(message);
       return;

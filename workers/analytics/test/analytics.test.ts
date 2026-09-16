@@ -107,11 +107,20 @@ describe('game analytics', () => {
   it('rejects duplicate and out-of-order events', () => {
     const analytics = applyAnalyticsEvent(
       createInitialGameAnalytics(game),
-      createEvent({ sequence: 2 }),
+      createEvent(),
     );
 
     expect(() => applyAnalyticsEvent(analytics, createEvent())).toThrow(
-      'sequence 1 is not after 2',
+      'sequence 1 is not after 1',
     );
+  });
+
+  it('rejects an event when an earlier sequence is missing', () => {
+    expect(() =>
+      applyAnalyticsEvent(
+        createInitialGameAnalytics(game),
+        createEvent({ eventId: 'evt-3', sequence: 3 }),
+      ),
+    ).toThrow('sequence 3 arrived before sequence 1');
   });
 });

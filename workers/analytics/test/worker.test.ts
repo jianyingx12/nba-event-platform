@@ -243,10 +243,10 @@ describe('AnalyticsWorker', () => {
     expect(storedAnalytics.homeTeam.points).toBe(3);
   });
 
-  it('dead-letters an out-of-order event without persisting it', async () => {
+  it('acknowledges a stale event without persisting it again', async () => {
     const dependencies = createDependencies();
     const current = applyAnalyticsEvent(
-      createInitialGameAnalytics(game),
+      applyAnalyticsEvent(createInitialGameAnalytics(game), createEvent()),
       createEvent({ eventId: 'evt-2', sequence: 2 }),
     );
     vi.mocked(dependencies.analytics.findByGameId).mockResolvedValueOnce(
@@ -262,11 +262,27 @@ describe('AnalyticsWorker', () => {
 
     await expect(worker.processNextBatch()).resolves.toBe(1);
     expect(dependencies.analytics.save).not.toHaveBeenCalled();
-    expect(dependencies.eventBus.deadLetter).toHaveBeenCalledWith({
-      consumerGroup: 'analytics',
-      message: { messageId: 'message-1', event: createEvent() },
-      reason: 'event evt-1 sequence 1 is not after 2',
-      attempts: 1,
+    expect(dependencies.eventBus.deadLetter).not.toHaveBeenCalled();
+    expect(dependencies.eventBus.acknowledge).toHaveBeenCalledWith(
+      'analytics',
+      'message-1',
+    );
+  });
+
+  it('leaves an event pending when an earlier sequence is missing', async () => {
+    const dependencies = createDependencies();
+    const event = createEvent({ eventId: 'evt-3', sequence: 3 });
+    vi.mocked(dependencies.eventBus.read).mockResolvedValueOnce([
+      { messageId: 'message-3', event },
+    ]);
+    const worker = new AnalyticsWorker(dependencies, {
+      consumerName: 'worker-1',
+      maxAttempts: 1,
     });
+
+    await expect(worker.processNextBatch()).resolves.toBe(1);
+    expect(dependencies.analytics.save).not.toHaveBeenCalled();
+    expect(dependencies.eventBus.deadLetter).not.toHaveBeenCalled();
+    expect(dependencies.eventBus.acknowledge).not.toHaveBeenCalled();
   });
 });
