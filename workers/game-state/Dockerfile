@@ -11,4 +11,6 @@ RUN pnpm --filter @nba-event-platform/game-state-worker... build
 
 ENV NODE_ENV=production
 
+EXPOSE 3000
+
 CMD ["node", "workers/game-state/dist/main.js"]

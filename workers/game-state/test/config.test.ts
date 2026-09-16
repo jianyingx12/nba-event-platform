@@ -16,6 +16,8 @@ describe('game state worker configuration', () => {
       claimIdleMs: 30_000,
       consumerName: 'worker-1',
       databaseUrl: 'postgresql://localhost/nba',
+      healthHost: '0.0.0.0',
+      healthPort: 3_000,
       maxAttempts: 3,
       redisUrl: 'redis://localhost:6379',
       retryDelayMs: 1_000,
@@ -56,6 +58,12 @@ describe('game state worker configuration', () => {
     );
     expect(() => loadConfig({ ...environment, RETRY_DELAY_MS: '-1' })).toThrow(
       'RETRY_DELAY_MS must be a positive integer',
+    );
+    expect(() => loadConfig({ ...environment, HEALTH_PORT: '0' })).toThrow(
+      'HEALTH_PORT must be an integer between 1 and 65535',
+    );
+    expect(() => loadConfig({ ...environment, HEALTH_PORT: '65536' })).toThrow(
+      'HEALTH_PORT must be an integer between 1 and 65535',
     );
   });
 });
