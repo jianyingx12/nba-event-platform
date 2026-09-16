@@ -6,6 +6,7 @@ import { createWorkload } from './workload.js';
 async function main(): Promise<void> {
   const config = loadConfig(process.argv.slice(2));
   const workload = createWorkload({
+    duplicateRate: config.duplicateRate,
     eventsPerGame: config.eventsPerGame,
     games: config.games,
     runId: config.runId,
@@ -20,6 +21,7 @@ async function main(): Promise<void> {
         games: config.games,
         eventsPerGame: config.eventsPerGame,
         concurrency: config.concurrency,
+        duplicateRate: config.duplicateRate,
         ...report,
       },
       null,

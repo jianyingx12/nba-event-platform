@@ -11,6 +11,7 @@ export interface GameWorkload {
 }
 
 export interface WorkloadOptions {
+  duplicateRate?: number;
   eventsPerGame: number;
   games: number;
   runId: string;
@@ -26,6 +27,7 @@ export function createWorkload(options: WorkloadOptions): GameWorkload[] {
       gameIndex + 1,
       options.eventsPerGame,
       startedAt,
+      options.duplicateRate ?? 0,
     ),
   );
 }
@@ -35,6 +37,7 @@ function createGameWorkload(
   gameNumber: number,
   eventCount: number,
   startedAt: string,
+  duplicateRate: number,
 ): GameWorkload {
   const gameId = `${runId}-game-${gameNumber}`;
   const homeTeamId = `${runId}-home-${gameNumber}`;
@@ -48,20 +51,43 @@ function createGameWorkload(
     status: 'live',
   });
 
+  const events = Array.from({ length: eventCount }, (_, eventIndex) =>
+    createEvent({
+      awayTeamId,
+      eventCount,
+      gameId,
+      homeTeamId,
+      runId,
+      sequence: eventIndex + 1,
+      startedAt,
+    }),
+  );
+
   return {
     game,
-    events: Array.from({ length: eventCount }, (_, eventIndex) =>
-      createEvent({
-        awayTeamId,
-        eventCount,
-        gameId,
-        homeTeamId,
-        runId,
-        sequence: eventIndex + 1,
-        startedAt,
-      }),
-    ),
+    events: addDuplicates(events, duplicateRate),
   };
+}
+
+function addDuplicates(
+  events: GameEvent[],
+  duplicateRate: number,
+): GameEvent[] {
+  const duplicateCount = Math.round(events.length * (duplicateRate / 100));
+
+  if (duplicateCount === 0) {
+    return events;
+  }
+
+  const duplicateIndexes = new Set(
+    Array.from({ length: duplicateCount }, (_, index) =>
+      Math.floor(((index + 0.5) * events.length) / duplicateCount),
+    ),
+  );
+
+  return events.flatMap((event, index) =>
+    duplicateIndexes.has(index) ? [event, event] : [event],
+  );
 }
 
 interface EventOptions {

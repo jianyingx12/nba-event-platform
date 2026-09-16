@@ -47,4 +47,24 @@ describe('load test workload', () => {
     expect(new Set(gameIds).size).toBe(gameIds.length);
     expect(new Set(eventIds).size).toBe(eventIds.length);
   });
+
+  it('inserts deterministic duplicates after original events', () => {
+    const [item] = createWorkload({
+      duplicateRate: 30,
+      eventsPerGame: 10,
+      games: 1,
+      runId: 'duplicate-run',
+      startedAt: '2026-09-16T06:00:00.000Z',
+    });
+
+    expect(item?.events).toHaveLength(13);
+
+    const counts = new Map<string, number>();
+    for (const event of item?.events ?? []) {
+      counts.set(event.eventId, (counts.get(event.eventId) ?? 0) + 1);
+    }
+
+    expect([...counts.values()].filter((count) => count === 2)).toHaveLength(3);
+    expect([...counts.values()].filter((count) => count === 1)).toHaveLength(7);
+  });
 });

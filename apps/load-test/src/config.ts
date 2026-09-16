@@ -3,6 +3,7 @@ import { parseArgs } from 'node:util';
 export interface LoadTestConfig {
   baseUrl: string;
   concurrency: number;
+  duplicateRate: number;
   eventsPerGame: number;
   games: number;
   runId: string;
@@ -19,6 +20,7 @@ export function loadConfig(
     args,
     options: {
       concurrency: { type: 'string' },
+      'duplicate-rate': { type: 'string' },
       'events-per-game': { type: 'string' },
       games: { type: 'string' },
       'run-id': { type: 'string' },
@@ -30,6 +32,7 @@ export function loadConfig(
   return {
     baseUrl: normalizeUrl(values.url ?? environment.INGESTION_API_URL),
     concurrency: positiveInteger(values.concurrency, 'concurrency', 10),
+    duplicateRate: percentage(values['duplicate-rate'], 'duplicate-rate', 0),
     eventsPerGame: positiveInteger(
       values['events-per-game'],
       'events-per-game',
@@ -44,6 +47,24 @@ function normalizeUrl(value: string | undefined): string {
   const url = new URL(value?.trim() || 'http://localhost:3000');
 
   return url.toString().replace(/\/$/, '');
+}
+
+function percentage(
+  value: string | undefined,
+  name: string,
+  defaultValue: number,
+): number {
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+    throw new Error(`${name} must be a number between 0 and 100`);
+  }
+
+  return parsed;
 }
 
 function positiveInteger(
