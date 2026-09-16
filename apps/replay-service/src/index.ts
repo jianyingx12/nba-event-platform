@@ -10,6 +10,7 @@ export {
   type ReplayFixture,
 } from './fixture.js';
 export { HttpEventIngestionClient } from './ingestion-client.js';
+export { mapNbaScoreboard } from './nba-scoreboard.js';
 export {
   parseReplaySpeed,
   replayFixture,
