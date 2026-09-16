@@ -31,6 +31,16 @@ Stop the stack with:
 docker compose down
 ```
 
+## Run with Kubernetes
+
+Local Kubernetes manifests are in `infra/kubernetes`. They target a kind
+cluster and can be applied together after the local images and Secrets are
+available:
+
+```bash
+kubectl apply -k infra/kubernetes/base
+```
+
 ## Project structure
 
 ```text
