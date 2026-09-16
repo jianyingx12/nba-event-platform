@@ -1,6 +1,13 @@
+import {
+  createDatabasePool,
+  GameStateRepository,
+  PlayerGameStatsRepository,
+} from '@nba-event-platform/database';
+
 import { loadConfig } from './config.js';
 import { HttpLoadTestIngestionClient } from './ingestion-client.js';
 import { runLoadTest } from './runner.js';
+import { verifyWorkload } from './verification.js';
 import { createWorkload } from './workload.js';
 
 async function main(): Promise<void> {
@@ -13,6 +20,9 @@ async function main(): Promise<void> {
   });
   const client = new HttpLoadTestIngestionClient(config.baseUrl);
   const report = await runLoadTest(workload, client, config.concurrency);
+  const verification = config.databaseUrl
+    ? await verifyWithDatabase(config.databaseUrl, workload)
+    : { status: 'skipped' as const, reason: 'DATABASE_URL is not set' };
 
   process.stdout.write(
     `${JSON.stringify(
@@ -23,6 +33,7 @@ async function main(): Promise<void> {
         concurrency: config.concurrency,
         duplicateRate: config.duplicateRate,
         ...report,
+        verification,
       },
       null,
       2,
@@ -31,6 +42,29 @@ async function main(): Promise<void> {
 
   if (report.failedRequests > 0) {
     process.exitCode = 1;
+  }
+}
+
+async function verifyWithDatabase(
+  databaseUrl: string,
+  workload: ReturnType<typeof createWorkload>,
+) {
+  const database = createDatabasePool({
+    applicationName: 'load-test',
+    connectionString: databaseUrl,
+    connectionTimeoutMs: 5_000,
+  });
+
+  try {
+    const states = new GameStateRepository(database);
+    const stats = new PlayerGameStatsRepository(database);
+
+    return await verifyWorkload(workload, {
+      findGameState: (gameId) => states.findByGameId(gameId),
+      listPlayerGameStats: (gameId) => stats.listByGameId(gameId),
+    });
+  } finally {
+    await database.end();
   }
 }
 

@@ -11,6 +11,13 @@ export {
   type LoadTestReport,
 } from './runner.js';
 export {
+  buildExpectedResults,
+  verifyWorkload,
+  type ExpectedGameResults,
+  type VerificationReader,
+  type VerificationReport,
+} from './verification.js';
+export {
   createWorkload,
   type GameWorkload,
   type WorkloadOptions,

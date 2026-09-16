@@ -3,6 +3,7 @@ import { parseArgs } from 'node:util';
 export interface LoadTestConfig {
   baseUrl: string;
   concurrency: number;
+  databaseUrl: string | undefined;
   duplicateRate: number;
   eventsPerGame: number;
   games: number;
@@ -32,6 +33,7 @@ export function loadConfig(
   return {
     baseUrl: normalizeUrl(values.url ?? environment.INGESTION_API_URL),
     concurrency: positiveInteger(values.concurrency, 'concurrency', 10),
+    databaseUrl: environment.DATABASE_URL?.trim() || undefined,
     duplicateRate: percentage(values['duplicate-rate'], 'duplicate-rate', 0),
     eventsPerGame: positiveInteger(
       values['events-per-game'],

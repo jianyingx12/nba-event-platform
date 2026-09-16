@@ -7,6 +7,7 @@ describe('load test configuration', () => {
     expect(loadConfig([], {}, new Date('2026-09-16T06:00:00.000Z'))).toEqual({
       baseUrl: 'http://localhost:3000',
       concurrency: 10,
+      databaseUrl: undefined,
       duplicateRate: 0,
       eventsPerGame: 100,
       games: 1,
@@ -16,23 +17,27 @@ describe('load test configuration', () => {
 
   it('loads command-line values', () => {
     expect(
-      loadConfig([
-        '--url',
-        'http://ingestion-api:3000/',
-        '--games',
-        '16',
-        '--events-per-game',
-        '1000',
-        '--duplicate-rate',
-        '12.5',
-        '--concurrency',
-        '20',
-        '--run-id',
-        'benchmark-1',
-      ]),
+      loadConfig(
+        [
+          '--url',
+          'http://ingestion-api:3000/',
+          '--games',
+          '16',
+          '--events-per-game',
+          '1000',
+          '--duplicate-rate',
+          '12.5',
+          '--concurrency',
+          '20',
+          '--run-id',
+          'benchmark-1',
+        ],
+        { DATABASE_URL: 'postgresql://localhost/nba' },
+      ),
     ).toEqual({
       baseUrl: 'http://ingestion-api:3000',
       concurrency: 20,
+      databaseUrl: 'postgresql://localhost/nba',
       duplicateRate: 12.5,
       eventsPerGame: 1_000,
       games: 16,

@@ -48,6 +48,9 @@ importers:
 
   apps/load-test:
     dependencies:
+      '@nba-event-platform/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@nba-event-platform/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
