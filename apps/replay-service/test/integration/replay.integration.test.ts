@@ -109,7 +109,7 @@ describeWithServices('replay integration', () => {
       },
     );
     const boxScoreWorker = new BoxScoreWorker(
-      { eventBus: boxScoreBus, stats },
+      { eventBus: boxScoreBus, events, stats },
       {
         batchSize: eventCount,
         blockMs: 1_000,
