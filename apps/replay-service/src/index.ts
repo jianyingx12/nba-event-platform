@@ -1,4 +1,9 @@
 export { loadConfig, type ReplayServiceConfig } from './config.js';
+export type {
+  BasketballEventSource,
+  GameQuery,
+  StreamOptions,
+} from './event-source.js';
 export {
   parseReplayFixture,
   readReplayFixture,
