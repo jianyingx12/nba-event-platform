@@ -4,7 +4,11 @@ export {
   runWorkerLoop,
   type BatchProcessor,
 } from './runtime.js';
-export { applyGameEvent, createInitialGameState } from './state.js';
+export {
+  applyGameEvent,
+  createInitialGameState,
+  EventSequenceGapError,
+} from './state.js';
 export {
   GameStateWorker,
   type GameStateWorkerDependencies,

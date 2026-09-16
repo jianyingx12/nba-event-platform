@@ -4,7 +4,11 @@ import type {
 } from '@nba-event-platform/database';
 import type { EventBus, EventBusMessage } from '@nba-event-platform/event-bus';
 
-import { applyGameEvent, createInitialGameState } from './state.js';
+import {
+  applyGameEvent,
+  createInitialGameState,
+  EventSequenceGapError,
+} from './state.js';
 
 export interface GameStateWorkerDependencies {
   eventBus: Pick<
@@ -89,6 +93,10 @@ export class GameStateWorker {
             throw error;
           }
 
+          if (error instanceof EventSequenceGapError) {
+            return;
+          }
+
           await this.dependencies.eventBus.deadLetter({
             consumerGroup: this.consumerGroup,
             message,
@@ -114,7 +122,7 @@ export class GameStateWorker {
 
     if (
       state !== null &&
-      message.event.sequence === state.lastProcessedSequence
+      message.event.sequence <= state.lastProcessedSequence
     ) {
       await this.acknowledgeMessage(message);
       return;

@@ -23,6 +23,15 @@ export function createInitialGameState(game: Game): GameState {
   });
 }
 
+export class EventSequenceGapError extends Error {
+  constructor(eventId: string, sequence: number, expectedSequence: number) {
+    super(
+      `event ${eventId} sequence ${sequence} arrived before sequence ${expectedSequence}`,
+    );
+    this.name = 'EventSequenceGapError';
+  }
+}
+
 export function applyGameEvent(state: GameState, event: GameEvent): GameState {
   const current = gameStateSchema.parse(state);
   const nextEvent = gameEventSchema.parse(event);
@@ -34,6 +43,16 @@ export function applyGameEvent(state: GameState, event: GameEvent): GameState {
   if (nextEvent.sequence <= current.lastProcessedSequence) {
     throw new Error(
       `event ${nextEvent.eventId} sequence ${nextEvent.sequence} is not after ${current.lastProcessedSequence}`,
+    );
+  }
+
+  const expectedSequence = current.lastProcessedSequence + 1;
+
+  if (nextEvent.sequence !== expectedSequence) {
+    throw new EventSequenceGapError(
+      nextEvent.eventId,
+      nextEvent.sequence,
+      expectedSequence,
     );
   }
 

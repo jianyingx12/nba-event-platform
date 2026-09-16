@@ -19,7 +19,10 @@ describe('game state', () => {
   });
 
   it('updates the score for both teams', () => {
-    const initial = createInitialGameState(game);
+    const initial = applyGameEvent(
+      createInitialGameState(game),
+      createEvent({ eventType: 'period_start' }),
+    );
     const homeScore = applyGameEvent(
       initial,
       createEvent({
@@ -57,8 +60,8 @@ describe('game state', () => {
     const final = applyGameEvent(
       live,
       createEvent({
-        eventId: 'evt-200',
-        sequence: 200,
+        eventId: 'evt-2',
+        sequence: 2,
         eventType: 'game_end',
         period: 4,
         clock: '0:00',
@@ -81,17 +84,23 @@ describe('game state', () => {
   });
 
   it('rejects duplicate and out-of-order events', () => {
-    const current = applyGameEvent(
-      createInitialGameState(game),
-      createEvent({ eventId: 'evt-2', sequence: 2 }),
-    );
+    const current = applyGameEvent(createInitialGameState(game), createEvent());
 
-    expect(() =>
-      applyGameEvent(current, createEvent({ eventId: 'evt-2', sequence: 2 })),
-    ).toThrow('sequence 2 is not after 2');
+    expect(() => applyGameEvent(current, createEvent())).toThrow(
+      'sequence 1 is not after 1',
+    );
     expect(() =>
       applyGameEvent(current, createEvent({ eventId: 'evt-1', sequence: 1 })),
-    ).toThrow('sequence 1 is not after 2');
+    ).toThrow('sequence 1 is not after 1');
+  });
+
+  it('rejects an event when an earlier sequence is missing', () => {
+    expect(() =>
+      applyGameEvent(
+        createInitialGameState(game),
+        createEvent({ eventId: 'evt-3', sequence: 3 }),
+      ),
+    ).toThrow('sequence 3 arrived before sequence 1');
   });
 
   it('rejects a scoring event without a known team and point value', () => {
