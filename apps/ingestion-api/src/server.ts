@@ -47,7 +47,9 @@ export async function startServer(
       dashboardReader: {
         findAnalytics: (gameId) => analytics.findByGameId(gameId),
         findGame: (gameId) => games.findById(gameId),
+        findPlayers: (playerIds) => players.findByIds(playerIds),
         findState: (gameId) => gameStates.findByGameId(gameId),
+        findTeams: (teamIds) => teams.findByIds(teamIds),
         listPlayerStats: (gameId) => playerStats.listByGameId(gameId),
         listRecentEvents: (gameId) => events.listRecentByGameId(gameId),
       },

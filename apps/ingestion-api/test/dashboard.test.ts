@@ -5,7 +5,7 @@ import {
   type DashboardReader,
   type GameStore,
 } from '../src/index.js';
-import { game, gameEvent } from './fixtures.js';
+import { game, gameEvent, gameRoster } from './fixtures.js';
 
 const apps = [] as ReturnType<typeof buildApp>[];
 const eventBus = { publish: async () => 'message-1' };
@@ -19,6 +19,7 @@ afterEach(async () => {
 function createDashboardReader(found = true): DashboardReader {
   return {
     findGame: async () => (found ? game : null),
+    findPlayers: async () => gameRoster.players,
     findState: async () => ({
       gameId: game.gameId,
       homeTeamId: game.homeTeamId,
@@ -30,6 +31,7 @@ function createDashboardReader(found = true): DashboardReader {
       status: 'live',
       lastProcessedSequence: 105,
     }),
+    findTeams: async () => gameRoster.teams,
     listPlayerStats: async () => [],
     findAnalytics: async () => null,
     listRecentEvents: async () => [gameEvent],
@@ -55,6 +57,8 @@ describe('GET /v1/games/:gameId/dashboard', () => {
     expect(response.json()).toMatchObject({
       game,
       state: { homeScore: 104, awayScore: 101 },
+      teams: gameRoster.teams,
+      players: gameRoster.players,
       playerStats: [],
       analytics: null,
       recentEvents: [gameEvent],

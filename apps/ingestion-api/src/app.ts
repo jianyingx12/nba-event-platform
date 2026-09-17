@@ -8,7 +8,9 @@ import {
   type GameEvent,
   type GameRoster,
   type GameState,
+  type Player,
   type PlayerGameStats,
+  type Team,
 } from '@nba-event-platform/schemas';
 import Fastify, { type FastifyInstance } from 'fastify';
 
@@ -28,6 +30,8 @@ export interface DashboardReader {
   findAnalytics(gameId: string): Promise<GameAnalytics | null>;
   findGame(gameId: string): Promise<Game | null>;
   findState(gameId: string): Promise<GameState | null>;
+  findPlayers(playerIds: string[]): Promise<Player[]>;
+  findTeams(teamIds: string[]): Promise<Team[]>;
   listPlayerStats(gameId: string): Promise<PlayerGameStats[]>;
   listRecentEvents(gameId: string): Promise<GameEvent[]>;
 }
@@ -67,7 +71,22 @@ export function buildApp(options: AppOptions): FastifyInstance {
         options.dashboardReader.listRecentEvents(game.gameId),
       ]);
 
-      return { game, state, playerStats, analytics, recentEvents };
+      const [teams, players] = await Promise.all([
+        options.dashboardReader.findTeams([game.homeTeamId, game.awayTeamId]),
+        options.dashboardReader.findPlayers(
+          playerStats.map((stats) => stats.playerId),
+        ),
+      ]);
+
+      return {
+        game,
+        state,
+        teams,
+        players,
+        playerStats,
+        analytics,
+        recentEvents,
+      };
     },
   );
 
