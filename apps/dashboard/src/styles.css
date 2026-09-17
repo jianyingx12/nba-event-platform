@@ -291,6 +291,32 @@ h1 {
   border-top: 3px solid #101c2c;
 }
 
+.box-score__teams {
+  display: grid;
+  gap: 28px;
+}
+
+.box-score__team-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 0 9px;
+}
+
+.box-score__team-heading span {
+  font-family: Consolas, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.box-score__team-heading strong {
+  font-family: 'Arial Narrow', 'Segoe UI', sans-serif;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+}
+
 .section-heading {
   display: flex;
   align-items: end;

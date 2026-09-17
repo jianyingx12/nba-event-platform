@@ -1,7 +1,11 @@
-import type { GameAnalytics as GameAnalyticsData } from '@nba-event-platform/schemas';
+import type {
+  GameAnalytics as GameAnalyticsData,
+  Team,
+} from '@nba-event-platform/schemas';
 
 interface GameAnalyticsProps {
   analytics: GameAnalyticsData | null;
+  teams: Team[];
 }
 
 interface ComparisonRow {
@@ -69,7 +73,10 @@ function comparisons(analytics: GameAnalyticsData): ComparisonRow[] {
   ];
 }
 
-export function GameAnalytics({ analytics }: GameAnalyticsProps) {
+export function GameAnalytics({ analytics, teams }: GameAnalyticsProps) {
+  const teamLabel = (teamId: string) =>
+    teams.find((team) => team.teamId === teamId)?.abbreviation ?? teamId;
+
   return (
     <section className="analytics" aria-labelledby="analytics-heading">
       <header className="section-heading">
@@ -85,9 +92,9 @@ export function GameAnalytics({ analytics }: GameAnalyticsProps) {
       {analytics ? (
         <div className="analytics__board">
           <div className="analytics__teams" aria-hidden="true">
-            <span>{analytics.awayTeam.teamId}</span>
+            <span>{teamLabel(analytics.awayTeam.teamId)}</span>
             <span>Away / Home</span>
-            <span>{analytics.homeTeam.teamId}</span>
+            <span>{teamLabel(analytics.homeTeam.teamId)}</span>
           </div>
           {comparisons(analytics).map((comparison) => (
             <div className="analytics__row" key={comparison.label}>

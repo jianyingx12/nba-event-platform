@@ -3,15 +3,19 @@ import type {
   GameAnalytics,
   GameEvent,
   GameState,
+  Player,
   PlayerGameStats,
+  Team,
 } from '@nba-event-platform/schemas';
 
 export interface DashboardGame {
   analytics: GameAnalytics | null;
   game: Game;
+  players: Player[];
   playerStats: PlayerGameStats[];
   recentEvents: GameEvent[];
   state: GameState | null;
+  teams: Team[];
 }
 
 export async function loadDashboardGame(

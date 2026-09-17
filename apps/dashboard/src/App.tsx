@@ -5,6 +5,13 @@ import { BoxScore } from './BoxScore.js';
 import { GameAnalytics } from './GameAnalytics.js';
 import { RecentEvents } from './RecentEvents.js';
 
+function teamName(
+  team: DashboardGame['teams'][number] | undefined,
+  fallback: string,
+) {
+  return team ? `${team.city} ${team.name}` : fallback;
+}
+
 export function App() {
   const [gameId, setGameId] = useState(
     new URLSearchParams(window.location.search).get('game') ?? '',
@@ -12,6 +19,12 @@ export function App() {
   const [game, setGame] = useState<DashboardGame | null>(null);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const awayTeam = game?.teams.find(
+    (team) => team.teamId === game.game.awayTeamId,
+  );
+  const homeTeam = game?.teams.find(
+    (team) => team.teamId === game.game.homeTeamId,
+  );
 
   async function openGame(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,8 +93,11 @@ export function App() {
 
             <div className="scoreboard__score">
               <div className="team team--away">
-                <span className="team__side">Away</span>
-                <strong>{game.game.awayTeamId}</strong>
+                <span className="team__side">
+                  Away
+                  {awayTeam ? ` · ${awayTeam.abbreviation}` : ''}
+                </span>
+                <strong>{teamName(awayTeam, game.game.awayTeamId)}</strong>
                 <span className="team__score">
                   {game.state?.awayScore ?? '–'}
                 </span>
@@ -95,16 +111,25 @@ export function App() {
               </div>
 
               <div className="team team--home">
-                <span className="team__side">Home</span>
-                <strong>{game.game.homeTeamId}</strong>
+                <span className="team__side">
+                  Home
+                  {homeTeam ? ` · ${homeTeam.abbreviation}` : ''}
+                </span>
+                <strong>{teamName(homeTeam, game.game.homeTeamId)}</strong>
                 <span className="team__score">
                   {game.state?.homeScore ?? '–'}
                 </span>
               </div>
             </div>
           </section>
-          <GameAnalytics analytics={game.analytics} />
-          <BoxScore players={game.playerStats} />
+          <GameAnalytics analytics={game.analytics} teams={game.teams} />
+          <BoxScore
+            awayTeamId={game.game.awayTeamId}
+            homeTeamId={game.game.homeTeamId}
+            players={game.players}
+            stats={game.playerStats}
+            teams={game.teams}
+          />
           <RecentEvents events={game.recentEvents} />
         </>
       ) : (
