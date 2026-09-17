@@ -1,6 +1,7 @@
 export {
   loadConfig,
   type FixtureReplayConfig,
+  type NbaHistoricalReplayConfig,
   type NbaReplayConfig,
   type ReplayServiceConfig,
 } from './config.js';

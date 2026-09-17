@@ -47,6 +47,17 @@ describe('replay service config', () => {
     expect(() => loadConfig(['--nba'], {})).toThrow('NBA game id is required');
   });
 
+  it('selects a historical NBA game from the command line', () => {
+    expect(loadConfig(['--nba-history', '0022400247'], {})).toEqual({
+      source: 'nba-history',
+      gameId: '0022400247',
+      ingestionApiUrl: 'http://localhost:3000',
+    });
+    expect(() => loadConfig(['--nba-history'], {})).toThrow(
+      'NBA game id is required',
+    );
+  });
+
   it('rejects missing or invalid settings', () => {
     expect(() => loadConfig([], {})).toThrow('fixture path is required');
     expect(() => loadConfig(['game.json', '2'], {})).toThrow(

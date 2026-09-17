@@ -10,17 +10,27 @@ try {
   let gameId: string;
   let eventCount: number;
 
-  if (config.source === 'nba') {
+  if (config.source === 'nba' || config.source === 'nba-history') {
     const source = new NbaEventSource();
-    const game = (await source.listGames()).find(
-      (candidate) => candidate.gameId === config.gameId,
-    );
+    const game =
+      config.source === 'nba'
+        ? (await source.listGames()).find(
+            (candidate) => candidate.gameId === config.gameId,
+          )
+        : await source.getGame(config.gameId);
     if (!game) throw new Error(`NBA game ${config.gameId} was not found today`);
+    if (config.source === 'nba-history' && game.status !== 'final') {
+      throw new Error(`NBA game ${config.gameId} is not final`);
+    }
 
     await ingestion.registerGame(game);
     gameId = game.gameId;
     eventCount = 0;
-    for await (const event of source.streamGame(game.gameId)) {
+    const events =
+      config.source === 'nba-history'
+        ? await source.getGameEvents(game.gameId)
+        : source.streamGame(game.gameId);
+    for await (const event of events) {
       await ingestion.submit(event);
       eventCount += 1;
     }

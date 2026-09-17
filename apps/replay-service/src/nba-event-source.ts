@@ -5,6 +5,7 @@ import type {
   GameQuery,
   StreamOptions,
 } from './event-source.js';
+import { mapNbaBoxScore } from './nba-box-score.js';
 import { mapNbaPlayByPlay } from './nba-play-by-play.js';
 import { mapNbaScoreboard } from './nba-scoreboard.js';
 
@@ -12,6 +13,8 @@ const SCOREBOARD_URL =
   'https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.json';
 const PLAY_BY_PLAY_BASE_URL =
   'https://cdn.nba.com/static/json/liveData/playbyplay/';
+const BOX_SCORE_BASE_URL = 'https://cdn.nba.com/static/json/liveData/boxscore/';
+const NBA_DATA_HOST = 'nba-prod-us-east-1-mediaops-stats.s3.amazonaws.com';
 
 export class NbaEventSource implements BasketballEventSource {
   constructor(
@@ -30,22 +33,36 @@ export class NbaEventSource implements BasketballEventSource {
     return mapNbaScoreboard(payload);
   }
 
-  async *streamGame(
+  async getGame(gameId: string, signal?: AbortSignal): Promise<Game> {
+    const url = new URL(
+      `boxscore_${encodeURIComponent(gameId)}.json`,
+      BOX_SCORE_BASE_URL,
+    );
+    return mapNbaBoxScore(await this.fetchJson(url, signal));
+  }
+
+  async getGameEvents(
     gameId: string,
-    options: StreamOptions = {},
-  ): AsyncIterable<GameEvent> {
+    signal?: AbortSignal,
+  ): Promise<GameEvent[]> {
     const url = new URL(
       `playbyplay_${encodeURIComponent(gameId)}.json`,
       PLAY_BY_PLAY_BASE_URL,
     );
+    return mapNbaPlayByPlay(await this.fetchJson(url, signal));
+  }
+
+  async *streamGame(
+    gameId: string,
+    options: StreamOptions = {},
+  ): AsyncIterable<GameEvent> {
     const seenSourceEventIds = new Set<string>();
     let sequence = 0;
 
     while (!options.signal?.aborted) {
-      const payload = await this.fetchJson(url, options.signal);
       let gameEnded = false;
 
-      for (const event of mapNbaPlayByPlay(payload)) {
+      for (const event of await this.getGameEvents(gameId, options.signal)) {
         const sourceEventId = event.sourceEventId ?? event.eventId;
         if (seenSourceEventIds.has(sourceEventId)) continue;
 
@@ -65,19 +82,33 @@ export class NbaEventSource implements BasketballEventSource {
     url: string | URL,
     signal?: AbortSignal,
   ): Promise<unknown> {
-    const response = await this.request(url, {
+    const requestOptions: RequestInit = {
       headers: { accept: 'application/json' },
       signal,
-    });
+    };
+    let requestedUrl = url;
+    let response = await this.request(requestedUrl, requestOptions);
+
+    if (response.status === 403) {
+      requestedUrl = createFallbackUrl(url);
+      response = await this.request(requestedUrl, requestOptions);
+    }
 
     if (!response.ok) {
       throw new Error(
-        `NBA.com request failed with status ${response.status}: ${url}`,
+        `NBA.com request failed with status ${response.status}: ${requestedUrl}`,
       );
     }
 
     return response.json();
   }
+}
+
+function createFallbackUrl(value: string | URL): URL {
+  const url = new URL(value);
+  url.hostname = NBA_DATA_HOST;
+  url.pathname = url.pathname.replace('/static/json/', '/NBA/');
+  return url;
 }
 
 function delay(milliseconds: number): Promise<void> {

@@ -15,7 +15,13 @@ export interface NbaReplayConfig extends SharedConfig {
   gameId: string;
 }
 
-export type ReplayServiceConfig = FixtureReplayConfig | NbaReplayConfig;
+export interface NbaHistoricalReplayConfig extends SharedConfig {
+  source: 'nba-history';
+  gameId: string;
+}
+
+export type ReplayServiceConfig =
+  FixtureReplayConfig | NbaReplayConfig | NbaHistoricalReplayConfig;
 
 type Environment = Record<string, string | undefined>;
 
@@ -32,6 +38,15 @@ export function loadConfig(
     if (!gameId) throw new Error('NBA game id is required after --nba');
 
     return { source: 'nba', gameId, ingestionApiUrl };
+  }
+
+  if (arguments_[0] === '--nba-history') {
+    const gameId = arguments_[1]?.trim();
+    if (!gameId) {
+      throw new Error('NBA game id is required after --nba-history');
+    }
+
+    return { source: 'nba-history', gameId, ingestionApiUrl };
   }
 
   const fixturePath = arguments_[0]?.trim() || environment.FIXTURE_PATH?.trim();

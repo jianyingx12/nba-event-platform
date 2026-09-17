@@ -36,6 +36,49 @@ describe('NBA event source', () => {
     );
   });
 
+  it('fetches a historical game and its event snapshot', async () => {
+    const request = vi.fn<typeof fetch>(async (input) => {
+      const url = input.toString();
+      return url.includes('/boxscore/')
+        ? Response.json({ game: { ...game, gameStatus: 3 } })
+        : Response.json({ game: { gameId: game.gameId, actions: [action] } });
+    });
+    const source = new NbaEventSource(request);
+
+    await expect(source.getGame(game.gameId)).resolves.toMatchObject({
+      gameId: game.gameId,
+      status: 'final',
+    });
+    await expect(source.getGameEvents(game.gameId)).resolves.toMatchObject([
+      { gameId: game.gameId, eventType: 'period_start' },
+    ]);
+
+    expect(request.mock.calls[0]?.[0].toString()).toContain(
+      `/boxscore_${game.gameId}.json`,
+    );
+    expect(request.mock.calls[1]?.[0].toString()).toContain(
+      `/playbyplay_${game.gameId}.json`,
+    );
+  });
+
+  it('falls back to the NBA data host when the CDN returns 403', async () => {
+    const request = vi.fn<typeof fetch>(async (input) =>
+      input.toString().includes('cdn.nba.com')
+        ? new Response(null, { status: 403 })
+        : Response.json({ game: { ...game, gameStatus: 3 } }),
+    );
+    const source = new NbaEventSource(request);
+
+    await expect(source.getGame(game.gameId)).resolves.toMatchObject({
+      gameId: game.gameId,
+      status: 'final',
+    });
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(request.mock.calls[1]?.[0].toString()).toBe(
+      `https://nba-prod-us-east-1-mediaops-stats.s3.amazonaws.com/NBA/liveData/boxscore/boxscore_${game.gameId}.json`,
+    );
+  });
+
   it('polls for new actions without yielding duplicates', async () => {
     const shot = {
       ...action,
