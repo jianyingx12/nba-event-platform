@@ -6,6 +6,7 @@ resources:
   - postgres.yaml
   - redis.yaml
   - ingestion-api.yaml
+  - dashboard.yaml
   - game-state-worker.yaml
   - box-score-worker.yaml
   - analytics-worker.yaml
