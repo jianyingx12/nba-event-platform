@@ -63,7 +63,23 @@ describe('GameEventRepository', () => {
     ).resolves.toEqual([gameEvent]);
     expect(query).toHaveBeenCalledWith(
       expect.stringContaining('ORDER BY sequence DESC'),
-      [gameEvent.gameId, 10],
+      [gameEvent.gameId, null, 10],
+    );
+  });
+
+  it('returns events before a sequence cursor', async () => {
+    const { database, query } = createTestDatabase({
+      rowCount: 1,
+      rows: [{ payload: gameEvent }],
+    });
+    const repository = new GameEventRepository(database);
+
+    await expect(
+      repository.listPageByGameId(gameEvent.gameId, 200, 25),
+    ).resolves.toEqual([gameEvent]);
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('sequence < $2'),
+      [gameEvent.gameId, 200, 25],
     );
   });
 });

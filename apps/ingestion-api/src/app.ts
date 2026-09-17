@@ -32,8 +32,12 @@ export interface DashboardReader {
   findState(gameId: string): Promise<GameState | null>;
   findPlayers(playerIds: string[]): Promise<Player[]>;
   findTeams(teamIds: string[]): Promise<Team[]>;
+  listEvents(
+    gameId: string,
+    beforeSequence: number | undefined,
+    limit: number,
+  ): Promise<GameEvent[]>;
   listPlayerStats(gameId: string): Promise<PlayerGameStats[]>;
-  listRecentEvents(gameId: string): Promise<GameEvent[]>;
 }
 
 export interface AppOptions {
@@ -68,7 +72,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         options.dashboardReader.findState(game.gameId),
         options.dashboardReader.listPlayerStats(game.gameId),
         options.dashboardReader.findAnalytics(game.gameId),
-        options.dashboardReader.listRecentEvents(game.gameId),
+        options.dashboardReader.listEvents(game.gameId, undefined, 25),
       ]);
 
       const [teams, players] = await Promise.all([
@@ -89,6 +93,37 @@ export function buildApp(options: AppOptions): FastifyInstance {
       };
     },
   );
+
+  app.get<{
+    Params: { gameId: string };
+    Querystring: { beforeSequence?: string; limit?: string };
+  }>('/v1/games/:gameId/events', async (request, reply) => {
+    if (!options.dashboardReader) {
+      return reply.status(503).send({ reason: 'dashboard_unavailable' });
+    }
+
+    const limit = parsePositiveInteger(request.query.limit ?? '25');
+    const beforeSequence = request.query.beforeSequence
+      ? parsePositiveInteger(request.query.beforeSequence)
+      : undefined;
+    if (limit === null || limit > 100 || beforeSequence === null) {
+      return reply.status(400).send({ reason: 'invalid_pagination' });
+    }
+
+    const game = await options.dashboardReader.findGame(request.params.gameId);
+    if (!game) return reply.status(404).send({ reason: 'game_not_found' });
+
+    const results = await options.dashboardReader.listEvents(
+      game.gameId,
+      beforeSequence,
+      limit + 1,
+    );
+    const events = results.slice(0, limit);
+    const nextBeforeSequence =
+      results.length > limit ? events.at(-1)?.sequence : undefined;
+
+    return { events, nextBeforeSequence: nextBeforeSequence ?? null };
+  });
 
   app.get('/ready', async (_request, reply) => {
     try {
@@ -171,4 +206,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
   });
 
   return app;
+}
+
+function parsePositiveInteger(value: string): number | null {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }

@@ -27,12 +27,13 @@ const listGameEventsSql = `
   ORDER BY sequence ASC
 `;
 
-const listRecentGameEventsSql = `
+const listGameEventPageSql = `
   SELECT payload
   FROM game_events
   WHERE game_id = $1
+    AND ($2::integer IS NULL OR sequence < $2)
   ORDER BY sequence DESC
-  LIMIT $2
+  LIMIT $3
 `;
 
 function mapGameEventRow(value: unknown): GameEvent {
@@ -71,8 +72,17 @@ export class GameEventRepository {
   }
 
   async listRecentByGameId(gameId: string, limit = 25): Promise<GameEvent[]> {
-    const result = await this.database.query(listRecentGameEventsSql, [
+    return this.listPageByGameId(gameId, undefined, limit);
+  }
+
+  async listPageByGameId(
+    gameId: string,
+    beforeSequence: number | undefined,
+    limit: number,
+  ): Promise<GameEvent[]> {
+    const result = await this.database.query(listGameEventPageSql, [
       gameId,
+      beforeSequence ?? null,
       limit,
     ]);
 

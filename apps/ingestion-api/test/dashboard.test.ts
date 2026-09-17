@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   buildApp,
@@ -34,7 +34,7 @@ function createDashboardReader(found = true): DashboardReader {
     findTeams: async () => gameRoster.teams,
     listPlayerStats: async () => [],
     findAnalytics: async () => null,
-    listRecentEvents: async () => [gameEvent],
+    listEvents: async () => [gameEvent],
   };
 }
 
@@ -81,5 +81,58 @@ describe('GET /v1/games/:gameId/dashboard', () => {
 
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({ reason: 'game_not_found' });
+  });
+});
+
+describe('GET /v1/games/:gameId/events', () => {
+  it('returns a page and cursor for older events', async () => {
+    const events = [
+      gameEvent,
+      { ...gameEvent, eventId: 'evt-104', sequence: 104 },
+      { ...gameEvent, eventId: 'evt-103', sequence: 103 },
+    ];
+    const dashboardReader = createDashboardReader();
+    dashboardReader.listEvents = vi.fn(async () => events);
+    const app = buildApp({
+      dashboardReader,
+      eventBus,
+      eventStore,
+      gameStore,
+    });
+    apps.push(app);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/v1/games/${game.gameId}/events?beforeSequence=200&limit=2`,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      events: events.slice(0, 2),
+      nextBeforeSequence: 104,
+    });
+    expect(dashboardReader.listEvents).toHaveBeenCalledWith(
+      game.gameId,
+      200,
+      3,
+    );
+  });
+
+  it('rejects invalid pagination values', async () => {
+    const app = buildApp({
+      dashboardReader: createDashboardReader(),
+      eventBus,
+      eventStore,
+      gameStore,
+    });
+    apps.push(app);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/v1/games/${game.gameId}/events?limit=0`,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ reason: 'invalid_pagination' });
   });
 });

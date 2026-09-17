@@ -50,8 +50,9 @@ export async function startServer(
         findPlayers: (playerIds) => players.findByIds(playerIds),
         findState: (gameId) => gameStates.findByGameId(gameId),
         findTeams: (teamIds) => teams.findByIds(teamIds),
+        listEvents: (gameId, beforeSequence, limit) =>
+          events.listPageByGameId(gameId, beforeSequence, limit),
         listPlayerStats: (gameId) => playerStats.listByGameId(gameId),
-        listRecentEvents: (gameId) => events.listRecentByGameId(gameId),
       },
       eventBus: connectedEventBus,
       eventStore: events,
