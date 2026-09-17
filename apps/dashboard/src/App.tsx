@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 
 import { loadDashboardGame, type DashboardGame } from './api.js';
 import { BoxScore } from './BoxScore.js';
+import { GameAnalytics } from './GameAnalytics.js';
 import { RecentEvents } from './RecentEvents.js';
 
 export function App() {
@@ -102,6 +103,7 @@ export function App() {
               </div>
             </div>
           </section>
+          <GameAnalytics analytics={game.analytics} />
           <BoxScore players={game.playerStats} />
           <RecentEvents events={game.recentEvents} />
         </>
