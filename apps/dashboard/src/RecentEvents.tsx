@@ -1,14 +1,28 @@
 import type { GameEvent } from '@nba-event-platform/schemas';
 
 interface RecentEventsProps {
+  canShowNewer: boolean;
+  canShowOlder: boolean;
   events: GameEvent[];
+  loading: boolean;
+  onShowNewer: () => void;
+  onShowOlder: () => void;
+  page: number;
 }
 
 function formatEventType(eventType: GameEvent['eventType']) {
   return eventType.replaceAll('_', ' ');
 }
 
-export function RecentEvents({ events }: RecentEventsProps) {
+export function RecentEvents({
+  canShowNewer,
+  canShowOlder,
+  events,
+  loading,
+  onShowNewer,
+  onShowOlder,
+  page,
+}: RecentEventsProps) {
   return (
     <section className="event-feed" aria-labelledby="event-feed-heading">
       <header className="section-heading">
@@ -16,7 +30,7 @@ export function RecentEvents({ events }: RecentEventsProps) {
           <p>Newest first</p>
           <h2 id="event-feed-heading">Recent events</h2>
         </div>
-        <span>{events.length} shown</span>
+        <span>Page {page}</span>
       </header>
 
       {events.length > 0 ? (
@@ -41,6 +55,24 @@ export function RecentEvents({ events }: RecentEventsProps) {
       ) : (
         <p className="event-feed__empty">No events have been recorded.</p>
       )}
+
+      <nav className="event-feed__pagination" aria-label="Event pages">
+        <button
+          type="button"
+          disabled={!canShowNewer || loading}
+          onClick={onShowNewer}
+        >
+          Newer events
+        </button>
+        <span>{events.length} shown</span>
+        <button
+          type="button"
+          disabled={!canShowOlder || loading}
+          onClick={onShowOlder}
+        >
+          {loading ? 'Loading…' : 'Older events'}
+        </button>
+      </nav>
     </section>
   );
 }

@@ -473,6 +473,48 @@ h1 {
   background: #f6f2e8;
 }
 
+.event-feed__pagination {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  padding-top: 14px;
+  font-family: Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.event-feed__pagination button {
+  padding: 10px 12px;
+  border: 2px solid #101c2c;
+  color: #f6f2e8;
+  background: #101c2c;
+  font: inherit;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.event-feed__pagination button:first-child {
+  justify-self: start;
+}
+
+.event-feed__pagination button:last-child {
+  justify-self: end;
+}
+
+.event-feed__pagination button:disabled {
+  color: rgb(16 28 44 / 55%);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.event-feed__pagination button:focus-visible {
+  outline: 3px solid #2f6fed;
+  outline-offset: 3px;
+}
+
 .empty-state {
   position: relative;
   min-height: 420px;
@@ -560,6 +602,14 @@ h1 {
     align-items: flex-start;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .event-feed__pagination {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .event-feed__pagination span {
+    display: none;
   }
 
   .empty-state {

@@ -68,12 +68,19 @@ export function buildApp(options: AppOptions): FastifyInstance {
       );
       if (!game) return reply.status(404).send({ reason: 'game_not_found' });
 
-      const [state, playerStats, analytics, recentEvents] = await Promise.all([
-        options.dashboardReader.findState(game.gameId),
-        options.dashboardReader.listPlayerStats(game.gameId),
-        options.dashboardReader.findAnalytics(game.gameId),
-        options.dashboardReader.listEvents(game.gameId, undefined, 25),
-      ]);
+      const [state, playerStats, analytics, recentEventResults] =
+        await Promise.all([
+          options.dashboardReader.findState(game.gameId),
+          options.dashboardReader.listPlayerStats(game.gameId),
+          options.dashboardReader.findAnalytics(game.gameId),
+          options.dashboardReader.listEvents(game.gameId, undefined, 26),
+        ]);
+
+      const recentEvents = recentEventResults.slice(0, 25);
+      const recentEventsNextBeforeSequence =
+        recentEventResults.length > 25
+          ? recentEvents.at(-1)?.sequence
+          : undefined;
 
       const [teams, players] = await Promise.all([
         options.dashboardReader.findTeams([game.homeTeamId, game.awayTeamId]),
@@ -90,6 +97,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         playerStats,
         analytics,
         recentEvents,
+        recentEventsNextBeforeSequence: recentEventsNextBeforeSequence ?? null,
       };
     },
   );

@@ -1,6 +1,11 @@
 import { useState, type FormEvent } from 'react';
 
-import { loadDashboardGame, type DashboardGame } from './api.js';
+import {
+  loadDashboardGame,
+  loadGameEventPage,
+  type DashboardGame,
+  type EventPage,
+} from './api.js';
 import { BoxScore } from './BoxScore.js';
 import { GameAnalytics } from './GameAnalytics.js';
 import { RecentEvents } from './RecentEvents.js';
@@ -19,6 +24,10 @@ export function App() {
   const [game, setGame] = useState<DashboardGame | null>(null);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [eventPages, setEventPages] = useState<EventPage[]>([]);
+  const [eventPageIndex, setEventPageIndex] = useState(0);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const eventPage = eventPages[eventPageIndex];
   const awayTeam = game?.teams.find(
     (team) => team.teamId === game.game.awayTeamId,
   );
@@ -37,14 +46,51 @@ export function App() {
     try {
       const nextGame = await loadDashboardGame(requestedGameId);
       setGame(nextGame);
+      setEventPages([
+        {
+          events: nextGame.recentEvents,
+          nextBeforeSequence: nextGame.recentEventsNextBeforeSequence,
+        },
+      ]);
+      setEventPageIndex(0);
       setStatus('');
       window.history.replaceState(null, '', `?game=${requestedGameId}`);
     } catch (error) {
       setGame(null);
+      setEventPages([]);
       setStatus(error instanceof Error ? error.message : String(error));
     } finally {
       setLoading(false);
     }
+  }
+
+  async function showOlderEvents() {
+    if (!game || !eventPage?.nextBeforeSequence) return;
+
+    const cachedPage = eventPages[eventPageIndex + 1];
+    if (cachedPage) {
+      setEventPageIndex(eventPageIndex + 1);
+      return;
+    }
+
+    setEventsLoading(true);
+    try {
+      const nextPage = await loadGameEventPage(
+        game.game.gameId,
+        eventPage.nextBeforeSequence,
+      );
+      setEventPages((pages) => [...pages, nextPage]);
+      setEventPageIndex(eventPageIndex + 1);
+      setStatus('');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      setEventsLoading(false);
+    }
+  }
+
+  function showNewerEvents() {
+    setEventPageIndex((index) => Math.max(0, index - 1));
   }
 
   return (
@@ -130,7 +176,15 @@ export function App() {
             stats={game.playerStats}
             teams={game.teams}
           />
-          <RecentEvents events={game.recentEvents} />
+          <RecentEvents
+            canShowNewer={eventPageIndex > 0}
+            canShowOlder={eventPage?.nextBeforeSequence != null}
+            events={eventPage?.events ?? game.recentEvents}
+            loading={eventsLoading}
+            onShowNewer={showNewerEvents}
+            onShowOlder={showOlderEvents}
+            page={eventPageIndex + 1}
+          />
         </>
       ) : (
         <div className="empty-state">
