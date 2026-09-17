@@ -6,13 +6,18 @@ import {
   GameRepository,
   GameStateRepository,
   PlayerGameStatsRepository,
+  PlayerRepository,
   ProcessedEventRepository,
   runMigrations,
+  TeamRepository,
 } from '../../src/index.js';
 import {
+  awayTeam,
   game,
   gameEvent,
   gameState,
+  homeTeam,
+  player,
   playerGameStats,
 } from '../repositories/fixtures.js';
 
@@ -40,6 +45,8 @@ describeWithDatabase('PostgreSQL persistence', () => {
       TRUNCATE TABLE
         processed_events,
         player_game_stats,
+        players,
+        teams,
         game_state,
         game_events,
         games
@@ -57,6 +64,18 @@ describeWithDatabase('PostgreSQL persistence', () => {
     const states = new GameStateRepository(pool);
     const stats = new PlayerGameStatsRepository(pool);
     const processedEvents = new ProcessedEventRepository(pool);
+    const teams = new TeamRepository(pool);
+    const players = new PlayerRepository(pool);
+
+    await expect(teams.save(homeTeam)).resolves.toEqual(homeTeam);
+    await expect(teams.save(awayTeam)).resolves.toEqual(awayTeam);
+    await expect(
+      teams.findByIds([homeTeam.teamId, awayTeam.teamId]),
+    ).resolves.toEqual([homeTeam, awayTeam]);
+    await expect(players.save(player)).resolves.toEqual(player);
+    await expect(players.findByIds([player.playerId])).resolves.toEqual([
+      player,
+    ]);
 
     await expect(games.save(game)).resolves.toEqual(game);
     await expect(games.findById(game.gameId)).resolves.toEqual(game);

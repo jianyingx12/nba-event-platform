@@ -3,13 +3,35 @@ import type {
   GameAnalytics,
   GameEvent,
   GameState,
+  Player,
   PlayerGameStats,
+  Team,
 } from '@nba-event-platform/schemas';
+
+export const homeTeam = {
+  teamId: 'BOS',
+  abbreviation: 'BOS',
+  city: 'Boston',
+  name: 'Celtics',
+} satisfies Team;
+
+export const awayTeam = {
+  teamId: 'NYK',
+  abbreviation: 'NYK',
+  city: 'New York',
+  name: 'Knicks',
+} satisfies Team;
+
+export const player = {
+  playerId: 'player-0',
+  displayName: 'Example Player',
+  teamId: homeTeam.teamId,
+} satisfies Player;
 
 export const game = {
   gameId: 'bos-nyk-2026-01',
-  homeTeamId: 'BOS',
-  awayTeamId: 'NYK',
+  homeTeamId: homeTeam.teamId,
+  awayTeamId: awayTeam.teamId,
   scheduledAt: '2026-01-15T00:00:00.000Z',
   startedAt: '2026-01-15T00:05:00.000Z',
   status: 'live',

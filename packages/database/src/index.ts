@@ -12,7 +12,9 @@ export { GameEventRepository } from './repositories/game-event-repository.js';
 export { GameRepository } from './repositories/game-repository.js';
 export { GameStateRepository } from './repositories/game-state-repository.js';
 export { PlayerGameStatsRepository } from './repositories/player-game-stats-repository.js';
+export { PlayerRepository } from './repositories/player-repository.js';
 export { ProcessedEventRepository } from './repositories/processed-event-repository.js';
+export { TeamRepository } from './repositories/team-repository.js';
 export type {
   DatabaseQueryResult,
   Queryable,
