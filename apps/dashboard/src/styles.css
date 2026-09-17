@@ -309,6 +309,71 @@ h1 {
   background: #f6f2e8;
 }
 
+.event-feed {
+  margin-top: 48px;
+  border-top: 3px solid #101c2c;
+}
+
+.event-feed__list {
+  margin: 0;
+  padding: 0;
+  border: 2px solid #101c2c;
+  background: #f6f2e8;
+  list-style: none;
+}
+
+.event-feed__item {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  border-bottom: 1px solid rgb(16 28 44 / 22%);
+}
+
+.event-feed__item:last-child {
+  border-bottom: 0;
+}
+
+.event-feed__sequence {
+  padding: 16px;
+  border-right: 1px solid rgb(16 28 44 / 22%);
+  color: #2f6fed;
+  font-family: Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.event-feed__play {
+  padding: 14px 16px 16px;
+}
+
+.event-feed__context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: Consolas, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.event-feed__type {
+  padding: 3px 6px;
+  color: #f6f2e8;
+  background: #101c2c;
+}
+
+.event-feed__play p {
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+.event-feed__empty {
+  margin: 0;
+  padding: 24px;
+  border: 2px solid #101c2c;
+  background: #f6f2e8;
+}
+
 .empty-state {
   position: relative;
   min-height: 420px;
@@ -382,6 +447,20 @@ h1 {
 
   .game-clock {
     min-width: 64px;
+  }
+
+  .event-feed__item {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .event-feed__sequence {
+    padding: 14px 10px;
+  }
+
+  .event-feed__context {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
   }
 
   .empty-state {

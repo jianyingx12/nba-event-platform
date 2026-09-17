@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 
 import { loadDashboardGame, type DashboardGame } from './api.js';
 import { BoxScore } from './BoxScore.js';
+import { RecentEvents } from './RecentEvents.js';
 
 export function App() {
   const [gameId, setGameId] = useState(
@@ -102,6 +103,7 @@ export function App() {
             </div>
           </section>
           <BoxScore players={game.playerStats} />
+          <RecentEvents events={game.recentEvents} />
         </>
       ) : (
         <div className="empty-state">
