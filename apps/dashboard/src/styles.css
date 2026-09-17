@@ -36,8 +36,7 @@ input {
 }
 
 .masthead,
-.game-picker__controls,
-.loaded-game {
+.game-picker__controls {
   display: flex;
   align-items: center;
 }
@@ -125,21 +124,93 @@ h1 {
   margin: 14px 0 0;
 }
 
-.loaded-game {
-  justify-content: space-between;
-  gap: 24px;
+.scoreboard {
   margin-top: 64px;
-  padding: 28px;
   color: #f6f2e8;
   background: #101c2c;
-  font-family: 'Arial Narrow', 'Segoe UI', sans-serif;
-  font-size: clamp(1.25rem, 3vw, 2rem);
 }
 
-.loaded-game strong {
+.scoreboard__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgb(246 242 232 / 28%);
+  font-family: Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.game-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.game-status::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d7b47a;
+  content: '';
+}
+
+.game-status--live::before {
+  background: #d94a45;
+}
+
+.scoreboard__score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(20px, 5vw, 64px);
+  padding: clamp(28px, 6vw, 64px);
+}
+
+.team {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.team--home {
+  text-align: right;
+}
+
+.team__side,
+.game-clock span {
+  font-family: Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.team > strong {
+  overflow-wrap: anywhere;
+  font-family: 'Arial Narrow', 'Segoe UI', sans-serif;
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  font-weight: 600;
+}
+
+.team__score {
   color: #d7b47a;
   font-family: Consolas, monospace;
-  font-size: clamp(2.5rem, 8vw, 6rem);
+  font-size: clamp(3.5rem, 10vw, 7.5rem);
+  font-weight: 700;
+  line-height: 0.9;
+}
+
+.game-clock {
+  display: grid;
+  min-width: 96px;
+  gap: 4px;
+  text-align: center;
+}
+
+.game-clock strong {
+  font-family: Consolas, monospace;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
 }
 
 .empty-state {
@@ -198,14 +269,23 @@ h1 {
 }
 
 @media (max-width: 600px) {
-  .game-picker__controls,
-  .loaded-game {
+  .game-picker__controls {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .loaded-game {
+  .scoreboard__score {
+    gap: 12px;
+    padding: 28px 16px;
+  }
+
+  .team--away,
+  .team--home {
     text-align: center;
+  }
+
+  .game-clock {
+    min-width: 64px;
   }
 
   .empty-state {
