@@ -1,11 +1,11 @@
-import type { Game, GameEvent } from '@nba-event-platform/schemas';
+import type { Game, GameEvent, GameRoster } from '@nba-event-platform/schemas';
 
 import type {
   BasketballEventSource,
   GameQuery,
   StreamOptions,
 } from './event-source.js';
-import { mapNbaBoxScore } from './nba-box-score.js';
+import { mapNbaBoxScore, mapNbaGameRoster } from './nba-box-score.js';
 import { mapNbaPlayByPlay } from './nba-play-by-play.js';
 import { mapNbaScoreboard } from './nba-scoreboard.js';
 
@@ -15,6 +15,11 @@ const PLAY_BY_PLAY_BASE_URL =
   'https://cdn.nba.com/static/json/liveData/playbyplay/';
 const BOX_SCORE_BASE_URL = 'https://cdn.nba.com/static/json/liveData/boxscore/';
 const NBA_DATA_HOST = 'nba-prod-us-east-1-mediaops-stats.s3.amazonaws.com';
+
+export interface NbaGameDetails {
+  game: Game;
+  roster: GameRoster;
+}
 
 export class NbaEventSource implements BasketballEventSource {
   constructor(
@@ -34,11 +39,22 @@ export class NbaEventSource implements BasketballEventSource {
   }
 
   async getGame(gameId: string, signal?: AbortSignal): Promise<Game> {
+    return (await this.getGameDetails(gameId, signal)).game;
+  }
+
+  async getGameDetails(
+    gameId: string,
+    signal?: AbortSignal,
+  ): Promise<NbaGameDetails> {
     const url = new URL(
       `boxscore_${encodeURIComponent(gameId)}.json`,
       BOX_SCORE_BASE_URL,
     );
-    return mapNbaBoxScore(await this.fetchJson(url, signal));
+    const payload = await this.fetchJson(url, signal);
+    return {
+      game: mapNbaBoxScore(payload),
+      roster: mapNbaGameRoster(payload),
+    };
   }
 
   async getGameEvents(

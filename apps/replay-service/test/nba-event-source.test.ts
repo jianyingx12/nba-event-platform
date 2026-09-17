@@ -7,8 +7,20 @@ const game = {
   gameStatus: 2,
   gameStatusText: 'Q1 11:45',
   gameTimeUTC: '2026-01-15T00:30:00Z',
-  homeTeam: { teamId: 1610612738 },
-  awayTeam: { teamId: 1610612752 },
+  homeTeam: {
+    teamId: 1610612738,
+    teamCity: 'Boston',
+    teamName: 'Celtics',
+    teamTricode: 'BOS',
+    players: [{ personId: 101, name: 'Home Player' }],
+  },
+  awayTeam: {
+    teamId: 1610612752,
+    teamCity: 'New York',
+    teamName: 'Knicks',
+    teamTricode: 'NYK',
+    players: [{ personId: 202, name: 'Away Player' }],
+  },
 };
 
 const action = {
@@ -59,6 +71,26 @@ describe('NBA event source', () => {
     expect(request.mock.calls[1]?.[0].toString()).toContain(
       `/playbyplay_${game.gameId}.json`,
     );
+  });
+
+  it('fetches a game and roster from one box score request', async () => {
+    const request = vi.fn<typeof fetch>(async () =>
+      Response.json({ game: { ...game, gameStatus: 3 } }),
+    );
+    const source = new NbaEventSource(request);
+
+    await expect(source.getGameDetails(game.gameId)).resolves.toMatchObject({
+      game: { gameId: game.gameId },
+      roster: {
+        gameId: game.gameId,
+        teams: [{ abbreviation: 'BOS' }, { abbreviation: 'NYK' }],
+        players: [
+          { displayName: 'Home Player' },
+          { displayName: 'Away Player' },
+        ],
+      },
+    });
+    expect(request).toHaveBeenCalledOnce();
   });
 
   it('falls back to the NBA data host when the CDN returns 403', async () => {

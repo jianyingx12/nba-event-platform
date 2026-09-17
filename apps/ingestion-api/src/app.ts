@@ -1,10 +1,12 @@
 import type { EventBus } from '@nba-event-platform/event-bus';
 import {
   gameEventSchema,
+  gameRosterSchema,
   gameSchema,
   type Game,
   type GameAnalytics,
   type GameEvent,
+  type GameRoster,
   type GameState,
   type PlayerGameStats,
 } from '@nba-event-platform/schemas';
@@ -16,6 +18,10 @@ export interface EventStore {
 
 export interface GameStore {
   save(game: Game): Promise<Game>;
+}
+
+export interface RosterStore {
+  save(roster: GameRoster): Promise<void>;
 }
 
 export interface DashboardReader {
@@ -33,6 +39,7 @@ export interface AppOptions {
   gameStore: GameStore;
   logger?: boolean;
   readinessCheck?: () => boolean | Promise<boolean>;
+  rosterStore?: RosterStore;
 }
 
 export function buildApp(options: AppOptions): FastifyInstance {
@@ -91,6 +98,29 @@ export function buildApp(options: AppOptions): FastifyInstance {
     return reply.status(200).send({
       accepted: true,
       gameId: game.gameId,
+    });
+  });
+
+  app.post('/v1/rosters', async (request, reply) => {
+    const result = gameRosterSchema.safeParse(request.body);
+
+    if (!result.success) {
+      return reply.status(400).send({
+        accepted: false,
+        reason: 'invalid_roster',
+      });
+    }
+    if (!options.rosterStore) {
+      return reply.status(503).send({
+        accepted: false,
+        reason: 'roster_unavailable',
+      });
+    }
+
+    await options.rosterStore.save(result.data);
+    return reply.status(200).send({
+      accepted: true,
+      gameId: result.data.gameId,
     });
   });
 

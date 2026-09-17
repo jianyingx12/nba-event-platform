@@ -1,4 +1,4 @@
-import type { Game, GameEvent } from '@nba-event-platform/schemas';
+import type { Game, GameEvent, GameRoster } from '@nba-event-platform/schemas';
 
 export const game = {
   gameId: 'bos-nyk-2026-01',
@@ -23,3 +23,28 @@ export const gameEvent = {
   description: 'BOS player makes 3-point shot',
   source: 'historical-replay',
 } satisfies GameEvent;
+
+export const gameRoster = {
+  gameId: game.gameId,
+  teams: [
+    {
+      teamId: game.homeTeamId,
+      abbreviation: 'BOS',
+      city: 'Boston',
+      name: 'Celtics',
+    },
+    {
+      teamId: game.awayTeamId,
+      abbreviation: 'NYK',
+      city: 'New York',
+      name: 'Knicks',
+    },
+  ],
+  players: [
+    {
+      playerId: 'player-0',
+      displayName: 'Example Player',
+      teamId: game.homeTeamId,
+    },
+  ],
+} satisfies GameRoster;

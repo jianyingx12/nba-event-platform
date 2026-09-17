@@ -5,7 +5,9 @@ import {
   GameRepository,
   GameStateRepository,
   PlayerGameStatsRepository,
+  PlayerRepository,
   runMigrations,
+  TeamRepository,
 } from '@nba-event-platform/database';
 import {
   connectRedisEventBus,
@@ -38,6 +40,8 @@ export async function startServer(
     const games = new GameRepository(database);
     const gameStates = new GameStateRepository(database);
     const playerStats = new PlayerGameStatsRepository(database);
+    const players = new PlayerRepository(database);
+    const teams = new TeamRepository(database);
 
     const app = buildApp({
       dashboardReader: {
@@ -51,6 +55,14 @@ export async function startServer(
       eventStore: events,
       gameStore: games,
       logger: true,
+      rosterStore: {
+        save: async (roster) => {
+          await Promise.all(roster.teams.map((team) => teams.save(team)));
+          await Promise.all(
+            roster.players.map((player) => players.save(player)),
+          );
+        },
+      },
       readinessCheck: async () => {
         if (!connectedEventBus.isReady()) {
           return false;

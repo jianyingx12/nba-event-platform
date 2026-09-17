@@ -12,18 +12,22 @@ try {
 
   if (config.source === 'nba' || config.source === 'nba-history') {
     const source = new NbaEventSource();
-    const game =
-      config.source === 'nba'
-        ? (await source.listGames()).find(
-            (candidate) => candidate.gameId === config.gameId,
-          )
-        : await source.getGame(config.gameId);
-    if (!game) throw new Error(`NBA game ${config.gameId} was not found today`);
+    if (
+      config.source === 'nba' &&
+      !(await source.listGames()).some(
+        (candidate) => candidate.gameId === config.gameId,
+      )
+    ) {
+      throw new Error(`NBA game ${config.gameId} was not found today`);
+    }
+
+    const { game, roster } = await source.getGameDetails(config.gameId);
     if (config.source === 'nba-history' && game.status !== 'final') {
       throw new Error(`NBA game ${config.gameId} is not final`);
     }
 
     await ingestion.registerGame(game);
+    await ingestion.registerRoster(roster);
     gameId = game.gameId;
     eventCount = 0;
     const events =

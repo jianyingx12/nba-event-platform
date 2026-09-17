@@ -13,6 +13,7 @@ export {
   type GameStatus,
 } from './game.js';
 export { gameStateSchema, type GameState } from './game-state.js';
+export { gameRosterSchema, type GameRoster } from './game-roster.js';
 export {
   gameAnalyticsSchema,
   teamAnalyticsSchema,
