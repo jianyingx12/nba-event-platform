@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 
 import { loadDashboardGame, type DashboardGame } from './api.js';
+import { BoxScore } from './BoxScore.js';
 
 export function App() {
   const [gameId, setGameId] = useState(
@@ -66,39 +67,42 @@ export function App() {
       ) : null}
 
       {game ? (
-        <section className="scoreboard" aria-label="Game scoreboard">
-          <div className="scoreboard__meta">
-            <span className={`game-status game-status--${game.game.status}`}>
-              {game.game.status}
-            </span>
-            <span>Game {game.game.gameId}</span>
-          </div>
-
-          <div className="scoreboard__score">
-            <div className="team team--away">
-              <span className="team__side">Away</span>
-              <strong>{game.game.awayTeamId}</strong>
-              <span className="team__score">
-                {game.state?.awayScore ?? '–'}
+        <>
+          <section className="scoreboard" aria-label="Game scoreboard">
+            <div className="scoreboard__meta">
+              <span className={`game-status game-status--${game.game.status}`}>
+                {game.game.status}
               </span>
+              <span>Game {game.game.gameId}</span>
             </div>
 
-            <div className="game-clock" aria-label="Game clock">
-              <span>
-                {game.state ? `Q${game.state.period}` : 'Not started'}
-              </span>
-              <strong>{game.state?.clock ?? '–'}</strong>
-            </div>
+            <div className="scoreboard__score">
+              <div className="team team--away">
+                <span className="team__side">Away</span>
+                <strong>{game.game.awayTeamId}</strong>
+                <span className="team__score">
+                  {game.state?.awayScore ?? '–'}
+                </span>
+              </div>
 
-            <div className="team team--home">
-              <span className="team__side">Home</span>
-              <strong>{game.game.homeTeamId}</strong>
-              <span className="team__score">
-                {game.state?.homeScore ?? '–'}
-              </span>
+              <div className="game-clock" aria-label="Game clock">
+                <span>
+                  {game.state ? `Q${game.state.period}` : 'Not started'}
+                </span>
+                <strong>{game.state?.clock ?? '–'}</strong>
+              </div>
+
+              <div className="team team--home">
+                <span className="team__side">Home</span>
+                <strong>{game.game.homeTeamId}</strong>
+                <span className="team__score">
+                  {game.state?.homeScore ?? '–'}
+                </span>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+          <BoxScore players={game.playerStats} />
+        </>
       ) : (
         <div className="empty-state">
           <svg
