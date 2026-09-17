@@ -1,6 +1,7 @@
 export {
   buildApp,
   type AppOptions,
+  type DashboardReader,
   type EventStore,
   type GameStore,
 } from './app.js';

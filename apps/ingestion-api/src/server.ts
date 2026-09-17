@@ -1,7 +1,10 @@
 import {
   createDatabasePool,
+  GameAnalyticsRepository,
   GameEventRepository,
   GameRepository,
+  GameStateRepository,
+  PlayerGameStatsRepository,
   runMigrations,
 } from '@nba-event-platform/database';
 import {
@@ -30,11 +33,23 @@ export async function startServer(
       onError: logRedisError,
     });
     const connectedEventBus = eventBus;
+    const analytics = new GameAnalyticsRepository(database);
+    const events = new GameEventRepository(database);
+    const games = new GameRepository(database);
+    const gameStates = new GameStateRepository(database);
+    const playerStats = new PlayerGameStatsRepository(database);
 
     const app = buildApp({
+      dashboardReader: {
+        findAnalytics: (gameId) => analytics.findByGameId(gameId),
+        findGame: (gameId) => games.findById(gameId),
+        findState: (gameId) => gameStates.findByGameId(gameId),
+        listPlayerStats: (gameId) => playerStats.listByGameId(gameId),
+        listRecentEvents: (gameId) => events.listRecentByGameId(gameId),
+      },
       eventBus: connectedEventBus,
-      eventStore: new GameEventRepository(database),
-      gameStore: new GameRepository(database),
+      eventStore: events,
+      gameStore: games,
       logger: true,
       readinessCheck: async () => {
         if (!connectedEventBus.isReady()) {

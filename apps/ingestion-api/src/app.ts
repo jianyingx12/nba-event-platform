@@ -3,7 +3,10 @@ import {
   gameEventSchema,
   gameSchema,
   type Game,
+  type GameAnalytics,
   type GameEvent,
+  type GameState,
+  type PlayerGameStats,
 } from '@nba-event-platform/schemas';
 import Fastify, { type FastifyInstance } from 'fastify';
 
@@ -15,7 +18,16 @@ export interface GameStore {
   save(game: Game): Promise<Game>;
 }
 
+export interface DashboardReader {
+  findAnalytics(gameId: string): Promise<GameAnalytics | null>;
+  findGame(gameId: string): Promise<Game | null>;
+  findState(gameId: string): Promise<GameState | null>;
+  listPlayerStats(gameId: string): Promise<PlayerGameStats[]>;
+  listRecentEvents(gameId: string): Promise<GameEvent[]>;
+}
+
 export interface AppOptions {
+  dashboardReader?: DashboardReader;
   eventBus: Pick<EventBus, 'publish'>;
   eventStore: EventStore;
   gameStore: GameStore;
@@ -28,6 +40,29 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const readinessCheck = options.readinessCheck ?? (() => true);
 
   app.get('/health', async () => ({ status: 'ok' }));
+
+  app.get<{ Params: { gameId: string } }>(
+    '/v1/games/:gameId/dashboard',
+    async (request, reply) => {
+      if (!options.dashboardReader) {
+        return reply.status(503).send({ reason: 'dashboard_unavailable' });
+      }
+
+      const game = await options.dashboardReader.findGame(
+        request.params.gameId,
+      );
+      if (!game) return reply.status(404).send({ reason: 'game_not_found' });
+
+      const [state, playerStats, analytics, recentEvents] = await Promise.all([
+        options.dashboardReader.findState(game.gameId),
+        options.dashboardReader.listPlayerStats(game.gameId),
+        options.dashboardReader.findAnalytics(game.gameId),
+        options.dashboardReader.listRecentEvents(game.gameId),
+      ]);
+
+      return { game, state, playerStats, analytics, recentEvents };
+    },
+  );
 
   app.get('/ready', async (_request, reply) => {
     try {

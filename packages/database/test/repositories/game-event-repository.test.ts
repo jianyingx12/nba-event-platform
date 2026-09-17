@@ -50,4 +50,20 @@ describe('GameEventRepository', () => {
       [gameEvent.gameId],
     );
   });
+
+  it('returns a limited list with the newest events first', async () => {
+    const { database, query } = createTestDatabase({
+      rowCount: 1,
+      rows: [{ payload: gameEvent }],
+    });
+    const repository = new GameEventRepository(database);
+
+    await expect(
+      repository.listRecentByGameId(gameEvent.gameId, 10),
+    ).resolves.toEqual([gameEvent]);
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('ORDER BY sequence DESC'),
+      [gameEvent.gameId, 10],
+    );
+  });
 });

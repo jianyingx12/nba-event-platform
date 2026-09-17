@@ -27,6 +27,22 @@ const listGameEventsSql = `
   ORDER BY sequence ASC
 `;
 
+const listRecentGameEventsSql = `
+  SELECT payload
+  FROM game_events
+  WHERE game_id = $1
+  ORDER BY sequence DESC
+  LIMIT $2
+`;
+
+function mapGameEventRow(value: unknown): GameEvent {
+  if (typeof value !== 'object' || value === null || !('payload' in value)) {
+    throw new TypeError('database returned an invalid game event row');
+  }
+
+  return gameEventSchema.parse(value.payload);
+}
+
 export class GameEventRepository {
   constructor(private readonly database: Queryable) {}
 
@@ -51,16 +67,15 @@ export class GameEventRepository {
   async listByGameId(gameId: string): Promise<GameEvent[]> {
     const result = await this.database.query(listGameEventsSql, [gameId]);
 
-    return result.rows.map((value) => {
-      if (
-        typeof value !== 'object' ||
-        value === null ||
-        !('payload' in value)
-      ) {
-        throw new TypeError('database returned an invalid game event row');
-      }
+    return result.rows.map(mapGameEventRow);
+  }
 
-      return gameEventSchema.parse(value.payload);
-    });
+  async listRecentByGameId(gameId: string, limit = 25): Promise<GameEvent[]> {
+    const result = await this.database.query(listRecentGameEventsSql, [
+      gameId,
+      limit,
+    ]);
+
+    return result.rows.map(mapGameEventRow);
   }
 }
