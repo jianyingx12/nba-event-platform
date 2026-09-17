@@ -5,6 +5,7 @@ export interface GameQuery {
 }
 
 export interface StreamOptions {
+  pollIntervalMs?: number;
   signal?: AbortSignal;
 }
 

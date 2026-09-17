@@ -14,7 +14,10 @@ const PLAY_BY_PLAY_BASE_URL =
   'https://cdn.nba.com/static/json/liveData/playbyplay/';
 
 export class NbaEventSource implements BasketballEventSource {
-  constructor(private readonly request: typeof fetch = fetch) {}
+  constructor(
+    private readonly request: typeof fetch = fetch,
+    private readonly wait: (milliseconds: number) => Promise<void> = delay,
+  ) {}
 
   async listGames(options: GameQuery = {}): Promise<Game[]> {
     if (options.date !== undefined) {
@@ -35,10 +38,26 @@ export class NbaEventSource implements BasketballEventSource {
       `playbyplay_${encodeURIComponent(gameId)}.json`,
       PLAY_BY_PLAY_BASE_URL,
     );
-    const payload = await this.fetchJson(url, options.signal);
+    const seenSourceEventIds = new Set<string>();
+    let sequence = 0;
 
-    for (const event of mapNbaPlayByPlay(payload)) {
-      yield event;
+    while (!options.signal?.aborted) {
+      const payload = await this.fetchJson(url, options.signal);
+      let gameEnded = false;
+
+      for (const event of mapNbaPlayByPlay(payload)) {
+        const sourceEventId = event.sourceEventId ?? event.eventId;
+        if (seenSourceEventIds.has(sourceEventId)) continue;
+
+        seenSourceEventIds.add(sourceEventId);
+        sequence += 1;
+        gameEnded ||= event.eventType === 'game_end';
+        yield { ...event, sequence };
+      }
+
+      if (gameEnded) return;
+
+      await this.wait(Math.max(0, options.pollIntervalMs ?? 5_000));
     }
   }
 
@@ -59,4 +78,8 @@ export class NbaEventSource implements BasketballEventSource {
 
     return response.json();
   }
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }

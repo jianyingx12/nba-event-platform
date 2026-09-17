@@ -36,20 +36,49 @@ describe('NBA event source', () => {
     );
   });
 
-  it('fetches and yields a game snapshot', async () => {
+  it('polls for new actions without yielding duplicates', async () => {
+    const shot = {
+      ...action,
+      actionNumber: 5,
+      actionType: '2pt',
+      subType: 'layup',
+      shotResult: 'Made',
+      personId: 101,
+      teamId: game.homeTeam.teamId,
+    };
+    const gameEnd = {
+      ...action,
+      actionNumber: 500,
+      actionType: 'game',
+      subType: 'end',
+      clock: 'PT00M00.00S',
+      period: 4,
+    };
+    const snapshots = [[action], [action, shot], [action, shot, gameEnd]];
     const request = vi.fn<typeof fetch>(async () =>
-      Response.json({ game: { gameId: game.gameId, actions: [action] } }),
+      Response.json({
+        game: { gameId: game.gameId, actions: snapshots.shift() },
+      }),
     );
-    const source = new NbaEventSource(request);
+    const wait = vi.fn(async () => undefined);
+    const source = new NbaEventSource(request, wait);
 
     const events = [];
-    for await (const event of source.streamGame(game.gameId)) {
+    for await (const event of source.streamGame(game.gameId, {
+      pollIntervalMs: 25,
+    })) {
       events.push(event);
     }
 
-    expect(events).toMatchObject([
-      { gameId: game.gameId, eventType: 'period_start' },
+    expect(events.map((event) => event.eventType)).toEqual([
+      'period_start',
+      'shot_made',
+      'game_end',
     ]);
+    expect(events.map((event) => event.sequence)).toEqual([1, 2, 3]);
+    expect(request).toHaveBeenCalledTimes(3);
+    expect(wait).toHaveBeenCalledTimes(2);
+    expect(wait).toHaveBeenCalledWith(25);
     expect(request.mock.calls[0]?.[0].toString()).toBe(
       `https://cdn.nba.com/static/json/liveData/playbyplay/playbyplay_${game.gameId}.json`,
     );
@@ -59,8 +88,10 @@ describe('NBA event source', () => {
     const request = vi.fn<typeof fetch>(async () =>
       Response.json({ game: { gameId: game.gameId, actions: [] } }),
     );
-    const source = new NbaEventSource(request);
     const controller = new AbortController();
+    const source = new NbaEventSource(request, async () => {
+      controller.abort();
+    });
 
     for await (const event of source.streamGame(game.gameId, {
       signal: controller.signal,
@@ -69,6 +100,7 @@ describe('NBA event source', () => {
     }
 
     expect(request.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+    expect(request).toHaveBeenCalledTimes(1);
   });
 
   it('reports unsupported dates and failed requests', async () => {
