@@ -1,4 +1,9 @@
-export { loadConfig, type ReplayServiceConfig } from './config.js';
+export {
+  loadConfig,
+  type FixtureReplayConfig,
+  type NbaReplayConfig,
+  type ReplayServiceConfig,
+} from './config.js';
 export type {
   BasketballEventSource,
   GameQuery,

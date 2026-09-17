@@ -1,10 +1,21 @@
 import { parseReplaySpeed, type ReplaySpeed } from './replay.js';
 
-export interface ReplayServiceConfig {
-  fixturePath: string;
+interface SharedConfig {
   ingestionApiUrl: string;
+}
+
+export interface FixtureReplayConfig extends SharedConfig {
+  source: 'fixture';
+  fixturePath: string;
   speed: ReplaySpeed;
 }
+
+export interface NbaReplayConfig extends SharedConfig {
+  source: 'nba';
+  gameId: string;
+}
+
+export type ReplayServiceConfig = FixtureReplayConfig | NbaReplayConfig;
 
 type Environment = Record<string, string | undefined>;
 
@@ -12,17 +23,22 @@ export function loadConfig(
   arguments_: readonly string[],
   environment: Environment,
 ): ReplayServiceConfig {
-  const fixturePath = arguments_[0]?.trim() || environment.FIXTURE_PATH?.trim();
-
-  if (!fixturePath) {
-    throw new Error('fixture path is required');
-  }
-
   const ingestionApiUrl =
     environment.INGESTION_API_URL?.trim() || 'http://localhost:3000';
   validateHttpUrl(ingestionApiUrl);
 
+  if (arguments_[0] === '--nba') {
+    const gameId = arguments_[1]?.trim();
+    if (!gameId) throw new Error('NBA game id is required after --nba');
+
+    return { source: 'nba', gameId, ingestionApiUrl };
+  }
+
+  const fixturePath = arguments_[0]?.trim() || environment.FIXTURE_PATH?.trim();
+  if (!fixturePath) throw new Error('fixture path is required');
+
   return {
+    source: 'fixture',
     fixturePath,
     ingestionApiUrl,
     speed: parseReplaySpeed(
